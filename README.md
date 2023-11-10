@@ -46,8 +46,8 @@ module "example" {
 
 ## Examples
 
-- ...
-- ...
+- [Once](./examples/once)
+- [Periodic](./examples/periodic)
 
 ## Contributing
 
