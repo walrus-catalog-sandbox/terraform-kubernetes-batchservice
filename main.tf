@@ -173,8 +173,9 @@ resource "kubernetes_job_v1" "once" {
       }
 
       spec {
-        subdomain      = local.completions != null ? kubernetes_service_v1.tasks[0].metadata[0].name : null
-        restart_policy = try(var.deployment.retries == 0) ? "Never" : "OnFailure"
+        automount_service_account_token = false
+        subdomain                       = local.completions != null ? kubernetes_service_v1.tasks[0].metadata[0].name : null
+        restart_policy                  = try(var.deployment.retries == 0) ? "Never" : "OnFailure"
 
         dynamic "security_context" {
           for_each = try(length(var.deployment.system_controls), 0) > 0 ? [{}] : []
@@ -703,8 +704,9 @@ resource "kubernetes_cron_job_v1" "periodic" {
           }
 
           spec {
-            subdomain      = local.completions != null ? kubernetes_service_v1.tasks[0].metadata[0].name : null
-            restart_policy = try(var.deployment.retries == 0) ? "Never" : "OnFailure"
+            automount_service_account_token = false
+            subdomain                       = local.completions != null ? kubernetes_service_v1.tasks[0].metadata[0].name : null
+            restart_policy                  = try(var.deployment.retries == 0) ? "Never" : "OnFailure"
 
             dynamic "security_context" {
               for_each = try(length(var.deployment.system_controls), 0) > 0 ? [{}] : []
