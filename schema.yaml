@@ -386,6 +386,7 @@ components:
                 x-walrus-ui:
                   colSpan: 12
                   order: 8
+                  showIf: profile=run
               envs:
                 items:
                   properties:
@@ -577,6 +578,7 @@ components:
                       x-walrus-ui:
                         colSpan: 12
                         order: 3
+                        hidden: true
                   required:
                   - path
                   type: object
@@ -595,17 +597,17 @@ components:
               resources:
                 properties:
                   cpu:
-                    title: Cpu
+                    title: Cpu(Core)
                     type: number
                     x-walrus-ui:
                       order: 1
                   gpu:
-                    title: Gpu
+                    title: Gpu(Core)
                     type: number
                     x-walrus-ui:
                       order: 3
                   memory:
-                    title: Memory
+                    title: Memory(MiB)
                     type: number
                     x-walrus-ui:
                       order: 2
