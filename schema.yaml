@@ -1,0 +1,625 @@
+openapi: 3.0.3
+info:
+  title: OpenAPI schema for template terraform-kubernetes-taskservice
+components:
+  schemas:
+    variables:
+      required:
+      - containers
+      type: object
+      properties:
+        context:
+          title: Context
+          type: object
+          description: |
+            Receive contextual information. When Walrus deploys, Walrus will inject specific contextual information into this field.
+
+            Examples:
+            ```
+            context:
+              project:
+                name: string
+                id: string
+              environment:
+                name: string
+                id: string
+              resource:
+                name: string
+                id: string
+            ```
+          default: {}
+          additionalProperties:
+            type: object
+            x-walrus-ui:
+              colSpan: 12
+          x-walrus-ui:
+            colSpan: 12
+            group: Basic
+            hidden: true
+            order: 1
+        infrastructure:
+          title: Infrastructure
+          type: object
+          description: |
+            Specify the infrastructure information for deploying.
+
+            Examples:
+            ```
+            infrastructure:
+              namespace: string, optional
+              gpu_vendor: string, optional
+            ```
+          default: {}
+          properties:
+            gpu_vendor:
+              title: Gpu Vendor
+              type: string
+              x-walrus-ui:
+                order: 2
+            namespace:
+              title: Namespace
+              type: string
+              x-walrus-ui:
+                hidden: true
+                order: 1
+          x-walrus-ui:
+            colSpan: 12
+            group: Basic
+            order: 2
+        task:
+          title: Task
+          type: object
+          description: |
+            Specify the task action, like execution, security and so on.
+
+            Examples:
+            ```
+            task:
+              mode: once/periodic
+              periodic:
+                cron_expression: string
+                timezone: string, optional           # https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+                suspend: bool, optional
+                keep_unfinished: bool, optional      # when set to true, if the previous task has not been completed, the new task will not be launched even when the scheduling time arrives
+              timeout: number, optional
+              completions: number, optional
+              parallelism: number, optional
+              retries: number, optional
+              cleanup_finished: bool, optional       # cleanup the finished task after 5m
+              fs_group: number, optional
+              sysctls:
+              - name: string
+                value: string
+            ```
+          properties:
+            cleanup_finished:
+              default: false
+              title: Cleanup Finished
+              type: boolean
+              x-walrus-ui:
+                order: 7
+            completions:
+              title: Completions
+              type: number
+              x-walrus-ui:
+                order: 4
+            fs_group:
+              title: Fs Group
+              type: number
+              x-walrus-ui:
+                order: 8
+            mode:
+              default: once
+              title: Mode
+              type: string
+              x-walrus-ui:
+                order: 1
+            parallelism:
+              title: Parallelism
+              type: number
+              x-walrus-ui:
+                order: 5
+            periodic:
+              properties:
+                cron_expression:
+                  title: Cron Expression
+                  type: string
+                keep_unfinished:
+                  default: false
+                  title: Keep Unfinished
+                  type: boolean
+                suspend:
+                  default: false
+                  title: Suspend
+                  type: boolean
+                timezone:
+                  title: Timezone
+                  type: string
+              required:
+              - cron_expression
+              title: Periodic
+              type: object
+              x-walrus-ui:
+                colSpan: 12
+                showIf: mode=periodic
+                order: 2
+            retries:
+              default: 6
+              title: Retries
+              type: number
+              x-walrus-ui:
+                order: 6
+            sysctls:
+              items:
+                properties:
+                  name:
+                    title: Name
+                    type: string
+                  value:
+                    title: Value
+                    type: string
+                required:
+                - name
+                - value
+                type: object
+                x-walrus-ui:
+                  colSpan: 12
+              title: Sysctls
+              type: array
+              x-walrus-ui:
+                colSpan: 12
+                order: 9
+            timeout:
+              title: Timeout
+              type: number
+              x-walrus-ui:
+                order: 3
+          x-walrus-ui:
+            colSpan: 12
+            group: Basic
+            order: 3
+        containers:
+          title: Containers
+          type: array
+          description: |
+            Specify the container items to deploy.
+
+            Examples:
+            ```
+            containers:
+            - profile: init/run
+              image: string
+              execute:
+                working_dir: string, optional
+                command: list(string), optional
+                args: list(string), optional
+                readonly_rootfs: bool, optional
+                as_user: number, optional
+                as_group: number, optional
+              resources:
+                cpu: number, optional               # in oneCPU, i.e. 0.25, 0.5, 1, 2, 4
+                memory: number, optional            # in megabyte
+                gpu: number, optional               # in oneGPU, i.e. 1, 2, 4
+              envs:
+              - name: string
+                value: string, optional             # accpet changed and restart
+                value_refer:                        # donot accpet changed
+                  schema: string
+                  params: map(any)
+              files:
+              - path: string
+                mode: string, optional
+                content: string, optional           # accpet changed but not restart
+                content_refer:                      # donot accpet changed
+                  schema: string
+                  params: map(any)
+              mounts:
+              - path: string
+                readonly: bool, optional
+                subpath: string, optional
+                volume: string, optional            # shared between containers if named, otherwise exclusively by this container
+                volume_refer:
+                  schema: string
+                  params: map(any)
+              checks:
+              - type: execute/tcp/grpc/http/https
+                delay: number, optional
+                interval: number, optional
+                timeout: number, optional
+                retries: number, optional
+                teardown: bool, optional
+                execute:
+                  command: list(string)
+                tcp:
+                  port: number
+                grpc:
+                  port: number
+                  service: string, optional
+                http:
+                  port: number
+                  headers: map(string), optional
+                  path: string, optional
+                https:
+                  port: number
+                  headers: map(string), optional
+                  path: string, optional
+            ```
+          items:
+            properties:
+              checks:
+                items:
+                  properties:
+                    delay:
+                      title: Delay
+                      type: number
+                      x-walrus-ui:
+                        order: 2
+                    execute:
+                      properties:
+                        command:
+                          items:
+                            type: string
+                          title: Command
+                          type: array
+                          x-walrus-ui:
+                            colSpan: 12
+                      required:
+                      - command
+                      title: Execute
+                      type: object
+                      x-walrus-ui:
+                        colSpan: 12
+                        showIf: type=execute
+                    grpc:
+                      properties:
+                        port:
+                          title: Port
+                          type: number
+                        service:
+                          title: Service
+                          type: string
+                      required:
+                      - port
+                      title: Grpc
+                      type: object
+                      x-walrus-ui:
+                        colSpan: 12
+                        showIf: type=grpc
+                    http:
+                      properties:
+                        headers:
+                          additionalProperties:
+                            type: string
+                          title: Headers
+                          type: object
+                          x-walrus-ui:
+                            colSpan: 12
+                            order: 3
+                        path:
+                          title: Path
+                          type: string
+                          x-walrus-ui:
+                            order: 2
+                        port:
+                          title: Port
+                          type: number
+                          x-walrus-ui:
+                            order: 1
+                      required:
+                      - port
+                      title: Http
+                      type: object
+                      x-walrus-ui:
+                        colSpan: 12
+                        showIf: type=http
+                    https:
+                      properties:
+                        headers:
+                          additionalProperties:
+                            type: string
+                          title: Headers
+                          type: object
+                          x-walrus-ui:
+                            colSpan: 12
+                            order: 3
+                        path:
+                          title: Path
+                          type: string
+                          x-walrus-ui:
+                            order: 2
+                        port:
+                          title: Port
+                          type: number
+                          x-walrus-ui:
+                            order: 1
+                      required:
+                      - port
+                      title: Https
+                      type: object
+                      x-walrus-ui:
+                        colSpan: 12
+                        showIf: type=https
+                    interval:
+                      title: Interval
+                      type: number
+                      x-walrus-ui:
+                        order: 3
+                    retries:
+                      title: Retries
+                      type: number
+                      x-walrus-ui:
+                        order: 5
+                    tcp:
+                      properties:
+                        port:
+                          title: Port
+                          type: number
+                      required:
+                      - port
+                      title: Tcp
+                      type: object
+                      x-walrus-ui:
+                        colSpan: 12
+                        showIf: type=tcp
+                    teardown:
+                      title: Teardown
+                      type: boolean
+                      x-walrus-ui:
+                        order: 6
+                    timeout:
+                      title: Timeout
+                      type: number
+                      x-walrus-ui:
+                        order: 4
+                    type:
+                      title: Type
+                      type: string
+                      x-walrus-ui:
+                        order: 1
+                  required:
+                  - type
+                  type: object
+                  x-walrus-ui:
+                    colSpan: 12
+                title: Checks
+                type: array
+                x-walrus-ui:
+                  colSpan: 12
+                  order: 8
+              envs:
+                items:
+                  properties:
+                    name:
+                      title: Name
+                      type: string
+                      x-walrus-ui:
+                        order: 1
+                    value:
+                      title: Value
+                      type: string
+                      x-walrus-ui:
+                        order: 2
+                    value_refer:
+                      properties:
+                        params:
+                          additionalProperties:
+                            type: object
+                            x-walrus-ui:
+                              colSpan: 12
+                          title: Params
+                          type: object
+                          x-walrus-ui:
+                            colSpan: 12
+                        schema:
+                          title: Schema
+                          type: string
+                      required:
+                      - params
+                      - schema
+                      title: Value Refer
+                      type: object
+                      x-walrus-ui:
+                        colSpan: 12
+                        hidden: true
+                        order: 2
+                  required:
+                  - name
+                  type: object
+                  x-walrus-ui:
+                    colSpan: 12
+                title: Envs
+                type: array
+                x-walrus-ui:
+                  colSpan: 12
+                  order: 5
+              execute:
+                properties:
+                  args:
+                    items:
+                      type: string
+                    title: Args
+                    type: array
+                    x-walrus-ui:
+                      colSpan: 12
+                      order: 2
+                  as_group:
+                    title: As Group
+                    type: number
+                    x-walrus-ui:
+                      order: 5
+                  as_user:
+                    title: As User
+                    type: number
+                    x-walrus-ui:
+                      order: 6
+                  command:
+                    items:
+                      type: string
+                    title: Command
+                    type: array
+                    x-walrus-ui:
+                      colSpan: 12
+                      order: 1
+                  readonly_rootfs:
+                    title: Readonly Rootfs
+                    type: boolean
+                    x-walrus-ui:
+                      order: 4
+                  working_dir:
+                    title: Working Dir
+                    type: string
+                    x-walrus-ui:
+                      order: 3
+                title: Execute
+                type: object
+                x-walrus-ui:
+                  colSpan: 12
+                  order: 3
+              files:
+                items:
+                  properties:
+                    content:
+                      title: Content
+                      type: string
+                      x-walrus-ui:
+                        widget: TextArea
+                        order: 3
+                    content_refer:
+                      properties:
+                        params:
+                          additionalProperties:
+                            type: object
+                            x-walrus-ui:
+                              colSpan: 12
+                          title: Params
+                          type: object
+                          x-walrus-ui:
+                            colSpan: 12
+                        schema:
+                          title: Schema
+                          type: string
+                      required:
+                      - params
+                      - schema
+                      title: Content Refer
+                      type: object
+                      x-walrus-ui:
+                        colSpan: 12
+                        hidden: true
+                        order: 3
+                    mode:
+                      title: Mode
+                      type: string
+                      x-walrus-ui:
+                        order: 2
+                    path:
+                      title: Path
+                      type: string
+                      x-walrus-ui:
+                        order: 1
+                  required:
+                  - path
+                  type: object
+                  x-walrus-ui:
+                    colSpan: 12
+                title: Files
+                type: array
+                x-walrus-ui:
+                  colSpan: 12
+                  order: 6
+              image:
+                title: Image
+                type: string
+                x-walrus-ui:
+                  order: 1
+              mounts:
+                items:
+                  properties:
+                    path:
+                      title: Path
+                      type: string
+                      x-walrus-ui:
+                        order: 1
+                    readonly:
+                      title: Readonly
+                      type: boolean
+                      x-walrus-ui:
+                        order: 2
+                    subpath:
+                      title: Subpath
+                      type: string
+                      x-walrus-ui:
+                        order: 4
+                    volume:
+                      title: Volume
+                      type: string
+                      x-walrus-ui:
+                        order: 3
+                    volume_refer:
+                      properties:
+                        params:
+                          additionalProperties:
+                            type: object
+                            x-walrus-ui:
+                              colSpan: 12
+                          title: Params
+                          type: object
+                          x-walrus-ui:
+                            colSpan: 12
+                        schema:
+                          title: Schema
+                          type: string
+                      required:
+                      - params
+                      - schema
+                      title: Volume Refer
+                      type: object
+                      x-walrus-ui:
+                        colSpan: 12
+                        order: 3
+                  required:
+                  - path
+                  type: object
+                  x-walrus-ui:
+                    colSpan: 12
+                title: Mounts
+                type: array
+                x-walrus-ui:
+                  colSpan: 12
+                  order: 7
+              profile:
+                title: Profile
+                type: string
+                x-walrus-ui:
+                  order: 2
+              resources:
+                properties:
+                  cpu:
+                    title: Cpu
+                    type: number
+                    x-walrus-ui:
+                      order: 1
+                  gpu:
+                    title: Gpu
+                    type: number
+                    x-walrus-ui:
+                      order: 3
+                  memory:
+                    title: Memory
+                    type: number
+                    x-walrus-ui:
+                      order: 2
+                title: Resources
+                type: object
+                x-walrus-ui:
+                  colSpan: 12
+                  order: 4
+            required:
+            - image
+            type: object
+            x-walrus-ui:
+              colSpan: 12
+          x-walrus-ui:
+            colSpan: 12
+            group: Basic
+            order: 4

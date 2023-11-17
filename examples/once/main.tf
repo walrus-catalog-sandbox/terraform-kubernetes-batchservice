@@ -27,16 +27,13 @@ module "non_parallel" {
   }
 
   # calculate 1 time, retry 4 times if failed.
-  deployment = {
+  task = {
     retries = 4
   }
 
   containers = [
     {
-      name = "pi"
-      image = {
-        name = "perl:5.34.0"
-      }
+      image = "perl:5.34.0"
       execute = {
         command = ["perl", "-Mbignum=bpi", "-wle", "print bpi(2000)"]
       }
@@ -52,7 +49,7 @@ module "parallel" {
   }
 
   # calculate 10 times, process 3 units at once, retry 4 times if failed.
-  deployment = {
+  task = {
     completions = 10
     parallelism = 3
     retries     = 4
@@ -60,10 +57,7 @@ module "parallel" {
 
   containers = [
     {
-      name = "pi"
-      image = {
-        name = "perl:5.34.0"
-      }
+      image = "perl:5.34.0"
       execute = {
         command = ["perl", "-Mbignum=bpi", "-wle", "print bpi(2000)"]
       }
@@ -79,17 +73,14 @@ module "queue" {
   }
 
   # process 3 units at once, stop if any is done, retry 4 times if failed.
-  deployment = {
+  task = {
     parallelism = 3
     retries     = 4
   }
 
   containers = [
     {
-      name = "pi"
-      image = {
-        name = "perl:5.34.0"
-      }
+      image = "perl:5.34.0"
       execute = {
         command = ["perl", "-Mbignum=bpi", "-wle", "print bpi(2000)"]
       }

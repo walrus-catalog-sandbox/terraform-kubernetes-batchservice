@@ -27,22 +27,17 @@ module "normal" {
   }
 
   # calculate 1 time, retry 4 times if failed.
-  deployment = {
-    retries = 4
-    execute_strategy = {
-      type = "periodic"
-      periodic = {
-        cron_expression = "*/1 * * * *"
-      }
+  task = {
+    mode = "periodic"
+    periodic = {
+      cron_expression = "*/1 * * * *"
     }
+    retries = 4
   }
 
   containers = [
     {
-      name = "pi"
-      image = {
-        name = "perl:5.34.0"
-      }
+      image = "perl:5.34.0"
       execute = {
         command = ["perl", "-Mbignum=bpi", "-wle", "print bpi(2000)"]
       }
@@ -50,7 +45,7 @@ module "normal" {
   ]
 }
 
-module "blocking" {
+module "concurrent" {
   source = "../.."
 
   infrastructure = {
@@ -58,24 +53,19 @@ module "blocking" {
   }
 
   # calculate 10 times, process 3 units at once, retry 4 times if failed.
-  deployment = {
+  task = {
+    mode = "periodic"
+    periodic = {
+      cron_expression = "*/1 * * * *"
+      keep_unfinished = true
+    }
     parallelism = 3
     retries     = 4
-    execute_strategy = {
-      type = "periodic"
-      periodic = {
-        cron_expression   = "*/1 * * * *"
-        keep_not_finished = false
-      }
-    }
   }
 
   containers = [
     {
-      name = "alpine"
-      image = {
-        name = "alpine"
-      }
+      image = "alpine"
       execute = {
         command = ["sh", "-c", "sleep 80"]
       }
@@ -83,7 +73,7 @@ module "blocking" {
   ]
 }
 
-module "suspending" {
+module "suspend" {
   source = "../.."
 
   infrastructure = {
@@ -91,24 +81,18 @@ module "suspending" {
   }
 
   # process 3 units at once, stop if any is done, retry 4 times if failed.
-  deployment = {
-    retries = 4
-    execute_strategy = {
-      type = "periodic"
-      periodic = {
-        cron_expression   = "*/1 * * * *"
-        keep_not_finished = false
-        suspend           = true
-      }
+  task = {
+    mode = "periodic"
+    periodic = {
+      cron_expression = "*/1 * * * *"
+      suspend         = true
     }
+    retries = 4
   }
 
   containers = [
     {
-      name = "alpine"
-      image = {
-        name = "alpine"
-      }
+      image = "alpine"
       execute = {
         command = ["sh", "-c", "echo Hello World"]
       }

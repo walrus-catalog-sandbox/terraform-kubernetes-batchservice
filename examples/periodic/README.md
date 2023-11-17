@@ -37,8 +37,8 @@ $ tf apply -auto-approve \
 | Name | Source | Version |
 |------|--------|---------|
 | <a name="module_normal"></a> [normal](#module\_normal) | ../.. | n/a |
-| <a name="module_blocking"></a> [blocking](#module\_blocking) | ../.. | n/a |
-| <a name="module_suspending"></a> [suspending](#module\_suspending) | ../.. | n/a |
+| <a name="module_concurrent"></a> [concurrent](#module\_concurrent) | ../.. | n/a |
+| <a name="module_suspend"></a> [suspend](#module\_suspend) | ../.. | n/a |
 
 ## Resources
 
