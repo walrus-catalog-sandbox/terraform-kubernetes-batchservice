@@ -82,7 +82,7 @@ EOF
       suspend         = optional(bool, false)
       keep_unfinished = optional(bool, false)
     }))
-    timeout          = optional(number)
+    timeout          = optional(number, 300)
     completions      = optional(number)
     parallelism      = optional(number)
     retries          = optional(number, 6)
@@ -95,7 +95,7 @@ EOF
   })
   default = {
     type             = "once"
-    timeout          = 0
+    timeout          = 300
     retries          = 6
     cleanup_finished = false
   }

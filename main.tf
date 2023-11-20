@@ -83,7 +83,7 @@ locals {
   container_ephemeral_files_map = {
     for c in local.containers : c.name => [
       for f in c.files : merge(f, {
-        name = format("%s-eph-%s", c.name, md5(f.path))
+        name = format("eph-f-%s-%s", c.name, md5(f.path))
       })
       if f.content_refer == null
     ]
@@ -91,7 +91,7 @@ locals {
   container_refer_files_map = {
     for c in local.containers : c.name => [
       for f in c.files : merge(f, {
-        name = format("%s-%s", c.name, md5(jsonencode(f.content_refer)))
+        name = format("ref-f-%s-%s", c.name, md5(jsonencode(f.content_refer)))
       })
       if f.content_refer != null
     ]
@@ -100,7 +100,7 @@ locals {
   container_ephemeral_mounts_map = {
     for c in local.containers : c.name => [
       for m in c.mounts : merge(m, {
-        name = format("%s-eph-%s", c.name, try(m.volume == null || m.volume == "", true) ? replace(uuid(), "-", "") : md5(m.volume))
+        name = format("eph-m-%s", try(m.volume == null || m.volume == "", true) ? replace(uuid(), "-", "") : md5(m.volume))
       })
       if m.volume_refer == null
     ]
@@ -108,7 +108,7 @@ locals {
   container_refer_mounts_map = {
     for c in local.containers : c.name => [
       for m in c.mounts : merge(m, {
-        name = format("%s-%s", c.name, md5(jsonencode(m.volume_refer)))
+        name = format("ref-m-%s", md5(jsonencode(m.volume_refer)))
       })
       if m.volume_refer != null
     ]
@@ -266,9 +266,13 @@ resource "kubernetes_job_v1" "task" {
 
         ### declare ephemeral mounts.
         dynamic "volume" {
-          for_each = flatten([
-            for _, ms in local.container_ephemeral_mounts_map : ms
-          ])
+          for_each = [
+            for _, v in {
+              for m in flatten([
+                for _, ms in local.container_ephemeral_mounts_map : ms
+              ]) : m.name => m...
+            } : v[0]
+          ]
           content {
             name = volume.value.name
             empty_dir {}
@@ -277,9 +281,13 @@ resource "kubernetes_job_v1" "task" {
 
         ### declare refer mounts.
         dynamic "volume" {
-          for_each = flatten([
-            for _, ms in local.container_refer_mounts_map : ms
-          ])
+          for_each = [
+            for _, v in {
+              for m in flatten([
+                for _, ms in local.container_refer_mounts_map : ms
+              ]) : m.name => m...
+            } : v[0]
+          ]
           content {
             name = volume.value.name
             dynamic "config_map" {
@@ -853,9 +861,13 @@ resource "kubernetes_cron_job_v1" "task" {
 
             ### declare ephemeral mounts.
             dynamic "volume" {
-              for_each = flatten([
-                for _, ms in local.container_ephemeral_mounts_map : ms
-              ])
+              for_each = [
+                for _, v in {
+                  for m in flatten([
+                    for _, ms in local.container_ephemeral_mounts_map : ms
+                  ]) : m.name => m...
+                } : v[0]
+              ]
               content {
                 name = volume.value.name
                 empty_dir {}
@@ -864,9 +876,13 @@ resource "kubernetes_cron_job_v1" "task" {
 
             ### declare refer mounts.
             dynamic "volume" {
-              for_each = flatten([
-                for _, ms in local.container_refer_mounts_map : ms
-              ])
+              for_each = [
+                for _, v in {
+                  for m in flatten([
+                    for _, ms in local.container_refer_mounts_map : ms
+                  ]) : m.name => m...
+                } : v[0]
+              ]
               content {
                 name = volume.value.name
                 dynamic "config_map" {
