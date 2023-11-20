@@ -144,7 +144,7 @@ components:
                   type: string
                 keep_unfinished:
                   description: |
-                    Specify whether to keep unfinished task when arrive the next scheduling time.
+                    Specify whether to keep unfinished task when the scheduling time arrives.
                     When set to true, if the previous task has not been completed, the new task will not be launched.
                   default: false
                   title: Keep Unfinished
@@ -204,7 +204,7 @@ components:
                 order: 9
             timeout:
               description: |
-                Specify the maximum time in seconds for a task to be active before it be terminated.
+                Specify the maximum time in seconds for a task to be active before it is terminated.
               default: 300
               title: Timeout(Sec)
               type: number
