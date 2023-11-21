@@ -45,6 +45,14 @@ module "normal" {
   ]
 }
 
+output "normal_context" {
+  value = module.normal.context
+}
+
+output "normal_refer" {
+  value = nonsensitive(module.normal.refer)
+}
+
 module "concurrent" {
   source = "../.."
 
@@ -73,6 +81,14 @@ module "concurrent" {
   ]
 }
 
+output "concurrent_context" {
+  value = module.concurrent.context
+}
+
+output "concurrent_refer" {
+  value = nonsensitive(module.concurrent.refer)
+}
+
 module "suspend" {
   source = "../.."
 
@@ -98,4 +114,12 @@ module "suspend" {
       }
     }
   ]
+}
+
+output "suspend_context" {
+  value = module.suspend.context
+}
+
+output "suspend_refer" {
+  value = nonsensitive(module.suspend.refer)
 }

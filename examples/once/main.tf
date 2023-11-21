@@ -41,6 +41,14 @@ module "non_parallel" {
   ]
 }
 
+output "non_parallel_context" {
+  value = module.non_parallel.context
+}
+
+output "non_parallel_refer" {
+  value = nonsensitive(module.non_parallel.refer)
+}
+
 module "parallel" {
   source = "../.."
 
@@ -65,6 +73,14 @@ module "parallel" {
   ]
 }
 
+output "parallel_context" {
+  value = module.parallel.context
+}
+
+output "parallel_refer" {
+  value = nonsensitive(module.parallel.refer)
+}
+
 module "queue" {
   source = "../.."
 
@@ -86,4 +102,12 @@ module "queue" {
       }
     }
   ]
+}
+
+output "queue_context" {
+  value = module.queue.context
+}
+
+output "queue_refer" {
+  value = nonsensitive(module.queue.refer)
 }
