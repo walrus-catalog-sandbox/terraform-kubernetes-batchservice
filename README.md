@@ -1,6 +1,6 @@
-# Kubernetes Task Service
+# Kubernetes Container Task
 
-Terraform module which deploys task service on Kubernetes.
+Terraform module which deploys container task on Kubernetes.
 
 ## Usage
 
