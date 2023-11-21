@@ -13,20 +13,6 @@ components:
           type: object
           description: |
             Receive contextual information. When Walrus deploys, Walrus will inject specific contextual information into this field.
-
-            Examples:
-            ```
-            context:
-              project:
-                name: string
-                id: string
-              environment:
-                name: string
-                id: string
-              resource:
-                name: string
-                id: string
-            ```
           default: {}
           additionalProperties:
             type: object
@@ -34,7 +20,7 @@ components:
               colSpan: 12
           x-walrus-ui:
             colSpan: 12
-            group: Basic
+            group: Advanced
             hidden: true
             order: 1
         infrastructure:
@@ -42,13 +28,6 @@ components:
           type: object
           description: |
             Specify the infrastructure information for deploying.
-
-            Examples:
-            ```
-            infrastructure:
-              namespace: string, optional
-              gpu_vendor: string, optional
-            ```
           default: {}
           properties:
             gpu_vendor:
@@ -67,33 +46,13 @@ components:
                 order: 1
           x-walrus-ui:
             colSpan: 12
-            group: Basic
+            group: Advanced
             order: 2
         task:
           title: Task
           type: object
           description: |
             Specify the task action, like execution, security and so on.
-
-            Examples:
-            ```
-            task:
-              mode: once/periodic
-              periodic:
-                cron_expression: string
-                timezone: string, optional           # https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
-                suspend: bool, optional
-                keep_unfinished: bool, optional      # when set to true, if the previous task has not been completed, the new task will not be launched even when the scheduling time arrives
-              timeout: number, optional
-              completions: number, optional
-              parallelism: number, optional
-              retries: number, optional
-              cleanup_finished: bool, optional       # cleanup the finished task after 5m
-              fs_group: number, optional
-              sysctls:
-              - name: string
-                value: string
-            ```
           properties:
             cleanup_finished:
               description: |
@@ -219,67 +178,6 @@ components:
           type: array
           description: |
             Specify the container items to deploy.
-
-            Examples:
-            ```
-            containers:
-            - profile: init/run
-              image: string
-              execute:
-                working_dir: string, optional
-                command: list(string), optional
-                args: list(string), optional
-                readonly_rootfs: bool, optional
-                as_user: number, optional
-                as_group: number, optional
-              resources:
-                cpu: number, optional               # in oneCPU, i.e. 0.25, 0.5, 1, 2, 4
-                memory: number, optional            # in megabyte
-                gpu: number, optional               # in oneGPU, i.e. 1, 2, 4
-              envs:
-              - name: string
-                value: string, optional             # accpet changed and restart
-                value_refer:                        # donot accpet changed
-                  schema: string
-                  params: map(any)
-              files:
-              - path: string
-                mode: string, optional
-                content: string, optional           # accpet changed but not restart
-                content_refer:                      # donot accpet changed
-                  schema: string
-                  params: map(any)
-              mounts:
-              - path: string
-                readonly: bool, optional
-                subpath: string, optional
-                volume: string, optional            # shared between containers if named, otherwise exclusively by this container
-                volume_refer:
-                  schema: string
-                  params: map(any)
-              checks:
-              - type: execute/tcp/grpc/http/https
-                delay: number, optional
-                interval: number, optional
-                timeout: number, optional
-                retries: number, optional
-                teardown: bool, optional
-                execute:
-                  command: list(string)
-                tcp:
-                  port: number
-                grpc:
-                  port: number
-                  service: string, optional
-                http:
-                  port: number
-                  headers: map(string), optional
-                  path: string, optional
-                https:
-                  port: number
-                  headers: map(string), optional
-                  path: string, optional
-            ```
           items:
             properties:
               checks:
@@ -491,6 +389,7 @@ components:
                       type: string
                       x-walrus-ui:
                         order: 1
+                        colSpan: 6
                     value:
                       description: |
                         Specify the value of the environment variable. 
@@ -499,6 +398,7 @@ components:
                       type: string
                       x-walrus-ui:
                         order: 2
+                        colSpan: 6
                     value_refer:
                       description: |
                         Specify the value refer of the environment variable.
@@ -615,6 +515,7 @@ components:
                       x-walrus-ui:
                         widget: TextArea
                         order: 3
+                        colSpan: 12
                     content_refer:
                       description: |
                         Specify the content refer of the (configuration) file.
@@ -656,6 +557,7 @@ components:
                       type: string
                       x-walrus-ui:
                         order: 2
+                        colSpan: 6
                     path:
                       description: |
                         Specify the mounting path of the (configuration) file.
@@ -663,6 +565,7 @@ components:
                       type: string
                       x-walrus-ui:
                         order: 1
+                        colSpan: 6
                   required:
                   - path
                   type: object
@@ -806,3 +709,7 @@ components:
             colSpan: 12
             group: Basic
             order: 4
+      x-walrus-ui:
+        groupOrder:
+          - Basic
+          - Advanced
