@@ -238,4 +238,12 @@ EOF
       }))
     })))
   }))
+  validation {
+    condition     = length(var.containers) > 0
+    error_message = "containers must be at least one"
+  }
+  validation {
+    condition     = alltrue([for c in var.containers : c.profile == "" || contains(["init", "run"], c.profile)])
+    error_message = "profile must be init or run"
+  }
 }
