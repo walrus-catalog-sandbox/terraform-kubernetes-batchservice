@@ -69,6 +69,7 @@ components:
               type: number
               x-walrus-ui:
                 order: 4
+                colSpan: 6
             fs_group:
               description: |
                 Specify a special supplemental group that applies to all containers in a pod.
@@ -94,6 +95,7 @@ components:
               type: number
               x-walrus-ui:
                 order: 5
+                colSpan: 6
             periodic:
               properties:
                 cron_expression:
@@ -101,24 +103,36 @@ components:
                     Specify the Cron Expression of the periodic task.
                   title: Cron Expression
                   type: string
+                  x-walrus-ui:
+                    colSpan: 6
+                    order: 1
                 keep_unfinished:
                   description: |
                     Specify whether to keep unfinished task when the scheduling time arrives.
-                    When set to true, if the previous task has not been completed, the new task will not be launched.
+                    When set to true, if the previous task has not completed, the new task will not be launched.
                   default: false
                   title: Keep Unfinished
                   type: boolean
+                  x-walrus-ui:
+                    colSpan: 6
+                    order: 3
                 suspend:
                   description: |
                     Specify whether to suspend the periodic task.
                   default: false
                   title: Suspend
                   type: boolean
+                  x-walrus-ui:
+                    colSpan: 6
+                    order: 4
                 timezone:
                   description: |
                     Specify the timezone of the periodic task, select from https://en.wikipedia.org/wiki/List_of_tz_database_time_zones.
                   title: Timezone
                   type: string
+                  x-walrus-ui:
+                    colSpan: 6
+                    order: 2
               required:
               - cron_expression
               title: Periodic
@@ -171,7 +185,7 @@ components:
                 order: 3
           x-walrus-ui:
             colSpan: 12
-            group: Basic
+            group: Advanced
             order: 3
         containers:
           title: Containers
@@ -374,7 +388,7 @@ components:
                 title: Checks
                 type: array
                 x-walrus-ui:
-                  colSpan: 12
+                  colSpan: 6
                   order: 9
                   showIf: profile=run
               envs:
@@ -442,7 +456,7 @@ components:
                 title: Envs
                 type: array
                 x-walrus-ui:
-                  colSpan: 12
+                  colSpan: 6
                   order: 5
               execute:
                 description: |
@@ -499,8 +513,8 @@ components:
                 title: Execute
                 type: object
                 x-walrus-ui:
-                  colSpan: 12
-                  order: 3
+                  colSpan: 6
+                  order: 4
               files:
                 description: |
                   Configure the files.
@@ -574,7 +588,7 @@ components:
                 title: Files
                 type: array
                 x-walrus-ui:
-                  colSpan: 12
+                  colSpan: 6
                   order: 6
               image:
                 title: Image
@@ -657,7 +671,7 @@ components:
                 title: Mounts
                 type: array
                 x-walrus-ui:
-                  colSpan: 12
+                  colSpan: 6
                   order: 7
               profile:
                 description: | 
@@ -698,8 +712,8 @@ components:
                 title: Resources
                 type: object
                 x-walrus-ui:
-                  colSpan: 12
-                  order: 4
+                  colSpan: 6
+                  order: 3
             required:
             - image
             type: object
