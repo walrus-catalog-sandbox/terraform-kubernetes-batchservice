@@ -237,7 +237,8 @@ components:
                       title: Delay(Sec)
                       type: number
                       x-walrus-ui:
-                        order: 2
+                        colSpan: 4
+                        order: 6
                     execute:
                       description: |
                         Configure the exeuction action.
@@ -259,6 +260,7 @@ components:
                       x-walrus-ui:
                         colSpan: 12
                         showIf: type=execute
+                        order: 2
                     grpc:
                       description: |
                         Configure the grpc check.
@@ -286,6 +288,7 @@ components:
                       x-walrus-ui:
                         colSpan: 12
                         showIf: type=grpc
+                        order: 2
                     http:
                       description: |
                         Configure the http check.
@@ -325,6 +328,7 @@ components:
                       x-walrus-ui:
                         colSpan: 12
                         showIf: type=http
+                        order: 2
                     https:
                       description: |
                         Configure the https check.
@@ -364,6 +368,7 @@ components:
                       x-walrus-ui:
                         colSpan: 12
                         showIf: type=https
+                        order: 2
                     interval:
                       description: |
                         Specify how often to do the check.
@@ -373,7 +378,8 @@ components:
                       type: number
                       minimum: 5
                       x-walrus-ui:
-                        order: 3
+                        colSpan: 4
+                        order: 4
                     retries:
                       description: |
                         Specify the number of retries before marking this check as failed.
@@ -383,7 +389,8 @@ components:
                       type: number
                       minimum: 1
                       x-walrus-ui:
-                        order: 5
+                        colSpan: 4
+                        order: 3
                     tcp:
                       description: |
                         Configure the tcp check.
@@ -401,6 +408,7 @@ components:
                       x-walrus-ui:
                         colSpan: 12
                         showIf: type=tcp
+                        order: 2
                     teardown:
                       description: |
                         Specify whether to teardown the pod if the check failed.
@@ -409,7 +417,8 @@ components:
                       title: Teardown
                       type: boolean
                       x-walrus-ui:
-                        order: 6
+                        colSpan: 4
+                        order: 7
                     timeout:
                       description: |
                         Specify the timeout of the check.
@@ -419,10 +428,12 @@ components:
                       type: number
                       minimum: 1
                       x-walrus-ui:
-                        order: 4
+                        colSpan: 4
+                        order: 5
                     type:
                       description: |
                         Specify the type of the check.
+                      default: http
                       title: Type
                       type: string
                       enum:
@@ -432,6 +443,7 @@ components:
                       - http
                       - https
                       x-walrus-ui:
+                        colSpan: 12
                         order: 1
                   required:
                   - type
@@ -502,7 +514,8 @@ components:
                     type: number
                     minimum: 0
                     x-walrus-ui:
-                      order: 5
+                      colSpan: 4
+                      order: 4
                   as_user:
                     description: |
                       Specify the user id to run the command.
@@ -511,7 +524,8 @@ components:
                     type: number
                     minimum: 0
                     x-walrus-ui:
-                      order: 6
+                      colSpan: 4
+                      order: 5
                   command:
                     description: |
                       Specify the entrypoint of the container.
@@ -530,7 +544,8 @@ components:
                     title: Readonly Rootfs
                     type: boolean
                     x-walrus-ui:
-                      order: 4
+                      colSpan: 4
+                      order: 6
                   working_dir:
                     description: |
                       Specify the working directory of the command.
@@ -538,6 +553,7 @@ components:
                     title: Working Dir
                     type: string
                     x-walrus-ui:
+                      colSpan: 12
                       order: 3
                 title: Execute
                 type: object
@@ -608,6 +624,7 @@ components:
                       title: Path
                       type: string
                       x-walrus-ui:
+                        colSpan: 6
                         order: 1
                     readonly:
                       description: |
@@ -617,7 +634,8 @@ components:
                       default: false
                       nullable: true
                       x-walrus-ui:
-                        order: 2
+                        colSpan: 6
+                        order: 4
                     subpath:
                       description: |
                         Specify the path of the volume which the container should be mounted.
@@ -625,7 +643,8 @@ components:
                       title: Subpath
                       type: string
                       x-walrus-ui:
-                        order: 4
+                        colSpan: 6
+                        order: 3
                     volume:
                       description: |
                         Specify the name of the ephemeral volume which shares between multiple containers. 
@@ -634,7 +653,8 @@ components:
                       title: Volume
                       type: string
                       x-walrus-ui:
-                        order: 3
+                        colSpan: 6
+                        order: 2
                   required:
                   - path
                   type: object
@@ -669,15 +689,18 @@ components:
                     minimum: 0.1
                     x-walrus-ui:
                       order: 1
+                      colSpan: 4
                   gpu:
                     description: |
                       Specify the gpu resources. Unit is core.
+                    default: 0
                     nullable: true
                     title: Gpu(Core)
                     type: number
                     minimum: 0
                     x-walrus-ui:
                       order: 3
+                      colSpan: 4
                   memory:
                     description: |
                       Specify the memory resources. Unit is megabyte.
@@ -688,6 +711,7 @@ components:
                     minimum: 10
                     x-walrus-ui:
                       order: 2
+                      colSpan: 4
                 title: Resources
                 type: object
                 x-walrus-ui:
