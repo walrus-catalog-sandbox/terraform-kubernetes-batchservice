@@ -200,7 +200,7 @@ resource "kubernetes_job_v1" "task" {
 
   spec {
     ### scaling.
-    active_deadline_seconds    = var.task.timeout
+    active_deadline_seconds    = try(var.task.timeout != null && var.task.timeout > 0, false) ? var.task.timeout : null
     completions                = local.completions
     parallelism                = try(var.task.parallelism != null && var.task.parallelism > 0, false) ? var.task.parallelism : null
     backoff_limit              = var.task.retries
@@ -798,7 +798,7 @@ resource "kubernetes_cron_job_v1" "task" {
 
       spec {
         ### scaling.
-        active_deadline_seconds    = var.task.timeout
+        active_deadline_seconds    = try(var.task.timeout != null && var.task.timeout > 0, false) ? var.task.timeout : null
         completions                = local.completions
         parallelism                = try(var.task.parallelism != null && var.task.parallelism > 0, false) ? var.task.parallelism : null
         backoff_limit              = var.task.retries
