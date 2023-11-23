@@ -40,29 +40,30 @@ locals {
       envs = [
         for xe in [
           for e in(c.envs != null ? c.envs : []) : e
-          if !(e.value != null && e.value_refer != null) && !(e.value == null && e.value_refer == null)
+          if e != null && try(!(e.value != null && e.value_refer != null) && !(e.value == null && e.value_refer == null), false)
         ] : xe
         if xe.value_refer == null || (try(contains(local.wellknown_env_schemas, xe.value_refer.schema), false) && try(lookup(xe.value_refer.params, "name", null) != null, false) && try(lookup(xe.value_refer.params, "key", null) != null, false))
       ]
       files = [
         for xf in [
           for f in(c.files != null ? c.files : []) : f
-          if !(f.content != null && f.content_refer != null) && !(f.content == null && f.content_refer == null)
+          if f != null && try(!(f.content != null && f.content_refer != null) && !(f.content == null && f.content_refer == null), false)
         ] : xf
         if xf.content_refer == null || (try(contains(local.wellknown_file_schemas, xf.content_refer.schema), false) && try(lookup(xf.content_refer.params, "name", null) != null, false) && try(lookup(xf.content_refer.params, "key", null) != null, false))
       ]
       mounts = [
         for xm in [
           for m in(c.mounts != null ? c.mounts : []) : m
-          if !(m.volume != null && m.volume_refer != null)
+          if m != null && try(!(m.volume != null && m.volume_refer != null), false)
         ] : xm
         if xm.volume_refer == null || (try(contains(local.wellknown_mount_schemas, xm.volume_refer.schema), false) && try(lookup(xm.volume_refer.params, "name", null) != null, false))
       ]
       checks = [
         for ck in(c.checks != null ? c.checks : []) : ck
-        if lookup(ck, ck.type, null) != null
+        if try(lookup(ck, ck.type, null) != null, false)
       ]
     })
+    if c != null
   ]
 }
 
@@ -70,14 +71,16 @@ locals {
   container_ephemeral_envs_map = {
     for c in local.containers : c.name => [
       for e in c.envs : e
-      if e.value_refer == null
+      if try(e.value_refer == null, false)
     ]
+    if c != null
   }
   container_refer_envs_map = {
     for c in local.containers : c.name => [
       for e in c.envs : e
-      if e.value_refer != null
+      if try(e.value_refer != null, false)
     ]
+    if c != null
   }
 
   container_ephemeral_files_map = {
@@ -85,16 +88,18 @@ locals {
       for f in c.files : merge(f, {
         name = format("eph-f-%s-%s", c.name, md5(f.path))
       })
-      if f.content_refer == null
+      if try(f.content_refer == null, false)
     ]
+    if c != null
   }
   container_refer_files_map = {
     for c in local.containers : c.name => [
       for f in c.files : merge(f, {
         name = format("ref-f-%s-%s", c.name, md5(jsonencode(f.content_refer)))
       })
-      if f.content_refer != null
+      if try(f.content_refer != null, false)
     ]
+    if c != null
   }
 
   container_ephemeral_mounts_map = {
@@ -102,8 +107,9 @@ locals {
       for m in c.mounts : merge(m, {
         name = format("eph-m-%s", try(m.volume == null || m.volume == "", true) ? replace(uuid(), "-", "") : md5(m.volume))
       })
-      if m.volume_refer == null
+      if try(m.volume_refer == null, false)
     ]
+    if c != null
   }
   container_refer_mounts_map = {
     for c in local.containers : c.name => [
@@ -112,15 +118,16 @@ locals {
       })
       if m.volume_refer != null
     ]
+    if c != null
   }
 
   init_containers = [
     for c in local.containers : c
-    if c.profile != "run"
+    if c != null && try(c.profile != "run", false)
   ]
   run_containers = [
     for c in local.containers : c
-    if c.profile == null || c.profile == "run"
+    if c != null && try(c.profile == "" || c.profile == "run", true)
   ]
 }
 

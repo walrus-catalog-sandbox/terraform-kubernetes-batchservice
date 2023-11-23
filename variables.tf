@@ -243,7 +243,7 @@ EOF
     error_message = "containers must be at least one"
   }
   validation {
-    condition     = alltrue([for c in var.containers : c.profile == "" || contains(["init", "run"], c.profile)])
+    condition     = alltrue([for c in var.containers : try(c.profile == "" || contains(["init", "run"], c.profile), true)])
     error_message = "profile must be init or run"
   }
 }
