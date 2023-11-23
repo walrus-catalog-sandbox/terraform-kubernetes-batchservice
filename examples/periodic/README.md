@@ -12,10 +12,10 @@ $ tf apply -auto-approve \
   -target=module.normal
 
 $ tf apply -auto-approve \
-  -target=module.blocking
+  -target=module.concurrent
 
 $ tf apply -auto-approve \
-  -target=module.suspending
+  -target=module.suspend
 ```
 
 <!-- BEGIN_TF_DOCS -->

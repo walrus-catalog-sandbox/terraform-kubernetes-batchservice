@@ -177,6 +177,15 @@ locals {
   completions = try(var.task.completions > 0, false) ? var.task.completions : null
 }
 
+resource "terraform_data" "replacement" {
+  count = local.mode == "once" ? 1 : 0
+
+  input = sha256(jsonencode({
+    task       = var.task
+    containers = var.containers
+  }))
+}
+
 resource "kubernetes_job_v1" "task" {
   count = local.mode == "once" ? 1 : 0
 
@@ -756,6 +765,9 @@ resource "kubernetes_job_v1" "task" {
     }
   }
 
+  lifecycle {
+    replace_triggered_by = [terraform_data.replacement[0]]
+  }
 }
 
 resource "kubernetes_cron_job_v1" "task" {
