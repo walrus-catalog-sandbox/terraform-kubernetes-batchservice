@@ -30,6 +30,7 @@ components:
           description: |
             Specify the infrastructure information for deploying.
           default: {}
+          nullable: true
           properties:
             gpu_vendor:
               description: |
@@ -41,9 +42,9 @@ components:
               x-walrus-ui:
                 order: 2
             namespace:
-              nullable: true
               title: Namespace
               type: string
+              nullable: true
               x-walrus-ui:
                 hidden: true
                 order: 1
@@ -56,7 +57,11 @@ components:
           type: object
           description: |
             Specify the task action, like execution, security and so on.
-          nullable: true
+          default: 
+            mode: "once"
+            retries: 6
+            timeout: 300
+            cleanup_finished: false
           properties:
             cleanup_finished:
               description: |
@@ -73,6 +78,7 @@ components:
               nullable: true
               title: Completions
               type: number
+              minimum: 1
               x-walrus-ui:
                 order: 4
                 colSpan: 6
@@ -82,13 +88,13 @@ components:
               nullable: true
               title: Fs Group
               type: number
+              minimum: 0
               x-walrus-ui:
                 order: 8
             mode:
               description: |
                 Specify the mode of the task, select from once or periodic.
               default: once
-              nullable: true
               title: Mode
               type: string
               enum:
@@ -100,6 +106,7 @@ components:
               description: |
                 Specify the maximum desired number of processes the task should run at any given time.
               nullable: true
+              minimum: 1
               title: Parallelism
               type: number
               x-walrus-ui:
@@ -153,7 +160,7 @@ components:
               x-walrus-ui:
                 colSpan: 12
                 showIf: mode=periodic
-                order: 2
+                order: 3
             retries:
               description: | 
                 Specify the number of retries before marking this task as failed.
@@ -161,6 +168,7 @@ components:
               nullable: true
               title: Retries
               type: number
+              minimum: 1
               x-walrus-ui:
                 order: 6
             sysctls:
@@ -197,8 +205,11 @@ components:
               nullable: true
               title: Timeout(Sec)
               type: number
+              minimum: 30
               x-walrus-ui:
-                order: 3
+                order: 2
+          required:
+          - mode
           x-walrus-ui:
             colSpan: 12
             group: Advanced
@@ -220,7 +231,9 @@ components:
                     delay:
                       description: |
                         Specify the delay time before starting the check.
+                      default: 0
                       nullable: true
+                      minimum: 0
                       title: Delay(Sec)
                       type: number
                       x-walrus-ui:
@@ -354,17 +367,21 @@ components:
                     interval:
                       description: |
                         Specify how often to do the check.
+                      default: 10
                       nullable: true
                       title: Interval
                       type: number
+                      minimum: 5
                       x-walrus-ui:
                         order: 3
                     retries:
                       description: |
                         Specify the number of retries before marking this check as failed.
+                      default: 1
                       nullable: true
                       title: Retries
                       type: number
+                      minimum: 1
                       x-walrus-ui:
                         order: 5
                     tcp:
@@ -387,6 +404,7 @@ components:
                     teardown:
                       description: |
                         Specify whether to teardown the pod if the check failed.
+                      default: false
                       nullable: true
                       title: Teardown
                       type: boolean
@@ -395,9 +413,11 @@ components:
                     timeout:
                       description: |
                         Specify the timeout of the check.
+                      default: 1
                       nullable: true
                       title: Timeout(Sec)
                       type: number
+                      minimum: 1
                       x-walrus-ui:
                         order: 4
                     type:
@@ -516,6 +536,7 @@ components:
                     nullable: true
                     title: As Group
                     type: number
+                    minimum: 0
                     x-walrus-ui:
                       order: 5
                   as_user:
@@ -524,6 +545,7 @@ components:
                     nullable: true
                     title: As User
                     type: number
+                    minimum: 0
                     x-walrus-ui:
                       order: 6
                   command:
@@ -614,6 +636,8 @@ components:
                         Specify the mode of the (configuration) file, default is 0644.
                       default: "0644"
                       nullable: true
+                      maxLength: 4
+                      minLength: 4
                       title: Mode
                       type: string
                       x-walrus-ui:
@@ -658,10 +682,10 @@ components:
                     readonly:
                       description: |
                         Specify whether to mount the volume as readonly.
-                      nullable: true
                       title: Readonly
                       type: boolean
                       default: false
+                      nullable: true
                       x-walrus-ui:
                         order: 2
                     subpath:
@@ -729,7 +753,6 @@ components:
                 description: | 
                   Specify the profile of the container, select from init or run.
                 default: "run"
-                nullable: true
                 title: Profile
                 type: string
                 enum:
@@ -747,6 +770,7 @@ components:
                     nullable: true
                     title: Cpu(Core)
                     type: number
+                    minimum: 0.1
                     x-walrus-ui:
                       order: 1
                   gpu:
@@ -755,6 +779,7 @@ components:
                     nullable: true
                     title: Gpu(Core)
                     type: number
+                    minimum: 0
                     x-walrus-ui:
                       order: 3
                   memory:
@@ -764,6 +789,7 @@ components:
                     nullable: true
                     title: Memory(MiB)
                     type: number
+                    minimum: 10
                     x-walrus-ui:
                       order: 2
                 title: Resources
@@ -773,6 +799,7 @@ components:
                   order: 3
             required:
             - image
+            - profile
             type: object
             x-walrus-ui:
               colSpan: 12

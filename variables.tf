@@ -94,7 +94,7 @@ EOF
     })))
   })
   default = {
-    type             = "once"
+    mode             = "once"
     timeout          = 300
     retries          = 6
     cleanup_finished = false
