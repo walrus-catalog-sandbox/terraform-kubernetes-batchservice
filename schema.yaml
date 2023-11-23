@@ -468,42 +468,6 @@ components:
                       x-walrus-ui:
                         order: 2
                         colSpan: 6
-                    value_refer:
-                      description: |
-                        Specify the value refer of the environment variable.
-                        Value source changes will not be propagated.
-                      nullable: true
-                      properties:
-                        params:
-                          description: |
-                            Specify the parameters of the value refer.
-                          additionalProperties:
-                            type: object
-                            x-walrus-ui:
-                              colSpan: 12
-                          title: Params
-                          type: object
-                          x-walrus-ui:
-                            colSpan: 12
-                            order: 2
-                        schema:
-                          description: |
-                            Specify the schema of the value refer, only support k8s:secret
-                          title: Schema
-                          type: string
-                          enum:
-                          - "k8s:secret"
-                          x-walrus-ui:
-                            order: 1
-                      required:
-                      - params
-                      - schema
-                      title: Value Refer
-                      type: object
-                      x-walrus-ui:
-                        colSpan: 12
-                        hidden: true
-                        order: 2
                   required:
                   - name
                   type: object
@@ -597,40 +561,6 @@ components:
                         widget: TextArea
                         order: 3
                         colSpan: 12
-                    content_refer:
-                      description: |
-                        Specify the content refer of the (configuration) file.
-                        Value source changes will not be propagated.
-                      nullable: true
-                      properties:
-                        params:
-                          description: |
-                            Specify the parameters of the content refer.
-                          additionalProperties:
-                            type: object
-                            x-walrus-ui:
-                              colSpan: 12
-                          title: Params
-                          type: object
-                          x-walrus-ui:
-                            colSpan: 12
-                        schema:
-                          description: |
-                            Specify the schema of the content refer, select from k8s:secret or k8s:configmap.
-                          title: Schema
-                          type: string
-                          enum:
-                          - "k8s:secret"
-                          - "k8s:configmap"
-                      required:
-                      - params
-                      - schema
-                      title: Content Refer
-                      type: object
-                      x-walrus-ui:
-                        colSpan: 12
-                        hidden: true
-                        order: 3
                     mode:
                       description: |
                         Specify the mode of the (configuration) file, default is 0644.
@@ -705,40 +635,6 @@ components:
                       type: string
                       x-walrus-ui:
                         order: 3
-                    volume_refer:
-                      description: |
-                        Specify the volume refer of the volume.
-                      nullable: true
-                      properties:
-                        params:
-                          description: |
-                            Specify the parameters of the volume refer.
-                          additionalProperties:
-                            type: object
-                            x-walrus-ui:
-                              colSpan: 12
-                          title: Params
-                          type: object
-                          x-walrus-ui:
-                            colSpan: 12
-                        schema:
-                          description: |
-                            Specify the schema of the volume refer, select from k8s:secret, k8s:configmap or k8s:persistentvolumeclaim.
-                          title: Schema
-                          type: string
-                          enum:
-                          - "k8s:secret"
-                          - "k8s:configmap"
-                          - "k8s:persistentvolumeclaim"
-                      required:
-                      - params
-                      - schema
-                      title: Volume Refer
-                      type: object
-                      x-walrus-ui:
-                        colSpan: 12
-                        order: 3
-                        hidden: true
                   required:
                   - path
                   type: object
