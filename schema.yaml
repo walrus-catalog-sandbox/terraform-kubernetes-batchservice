@@ -62,6 +62,7 @@ components:
             retries: 6
             timeout: 300
             cleanup_finished: false
+            keep_failed_process: true
           properties:
             cleanup_finished:
               description: |
@@ -72,6 +73,17 @@ components:
               type: boolean
               x-walrus-ui:
                 order: 7
+                colSpan: 4
+            keep_failed_process:
+              description: |
+                Specify whether to keep the failed task.
+              default: true
+              nullable: true
+              title: Keep Failed Process
+              type: boolean
+              x-walrus-ui:
+                order: 8
+                colSpan: 4
             completions:
               description: |
                 Specify the desired number of successfully finished processes the task should be run with.
@@ -81,7 +93,7 @@ components:
               minimum: 1
               x-walrus-ui:
                 order: 4
-                colSpan: 6
+                colSpan: 4
             fs_group:
               description: |
                 Specify a special supplemental group that applies to all containers in a pod.
@@ -90,7 +102,8 @@ components:
               type: number
               minimum: 0
               x-walrus-ui:
-                order: 8
+                order: 9
+                colSpan: 6
             mode:
               description: |
                 Specify the mode of the task, select from once or periodic.
@@ -102,6 +115,7 @@ components:
               - "periodic"
               x-walrus-ui:
                 order: 1
+                colSpan: 12
             parallelism:
               description: |
                 Specify the maximum desired number of processes the task should run at any given time.
@@ -111,7 +125,7 @@ components:
               type: number
               x-walrus-ui:
                 order: 5
-                colSpan: 6
+                colSpan: 4
             periodic:
               nullable: true
               properties:
@@ -171,6 +185,7 @@ components:
               minimum: 1
               x-walrus-ui:
                 order: 6
+                colSpan: 4
             sysctls:
               description: |
                 Specify the namespaced sysctls for the pod.
@@ -192,12 +207,12 @@ components:
                 - value
                 type: object
                 x-walrus-ui:
-                  colSpan: 12
+                  colSpan: 6
               title: Sysctls
               type: array
               x-walrus-ui:
-                colSpan: 12
-                order: 9
+                colSpan: 6
+                order: 10
             timeout:
               description: |
                 Specify the maximum time in seconds for a task to be active before it is terminated.
@@ -208,6 +223,7 @@ components:
               minimum: 0
               x-walrus-ui:
                 order: 2
+                colSpan: 4
           required:
           - mode
           x-walrus-ui:

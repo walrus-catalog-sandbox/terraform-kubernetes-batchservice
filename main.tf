@@ -216,7 +216,7 @@ resource "kubernetes_job_v1" "task" {
       spec {
         ### configure basic.
         automount_service_account_token = false
-        restart_policy                  = try(var.task.retries == 0) ? "Never" : "OnFailure"
+        restart_policy                  = try(var.task.keep_failed_process != null && var.task.keep_failed_process, true) ? "Never" : "OnFailure"
         subdomain                       = local.completions != null ? kubernetes_service_v1.tasks[0].metadata[0].name : null
         dynamic "security_context" {
           for_each = try(length(var.task.sysctls), 0) > 0 || try(var.task.fs_group != null, false) ? [{}] : []
@@ -814,7 +814,7 @@ resource "kubernetes_cron_job_v1" "task" {
           spec {
             ### configure basic.
             automount_service_account_token = false
-            restart_policy                  = try(var.task.retries == 0) ? "Never" : "OnFailure"
+            restart_policy                  = try(var.task.keep_failed_process != null && var.task.keep_failed_process, true) ? "Never" : "OnFailure"
             subdomain                       = local.completions != null ? kubernetes_service_v1.tasks[0].metadata[0].name : null
             dynamic "security_context" {
               for_each = try(length(var.task.sysctls), 0) > 0 || try(var.task.fs_group != null, false) ? [{}] : []

@@ -68,6 +68,7 @@ task:
   parallelism: number, optional
   retries: number, optional
   cleanup_finished: bool, optional       # cleanup the finished task after 5m
+  keep_failed_process: bool, optional    # when set to true, the failed process will not be restarted
   fs_group: number, optional
   sysctls:
   - name: string
@@ -82,22 +83,24 @@ EOF
       suspend         = optional(bool, false)
       keep_unfinished = optional(bool, false)
     }))
-    timeout          = optional(number, 300)
-    completions      = optional(number)
-    parallelism      = optional(number)
-    retries          = optional(number, 6)
-    cleanup_finished = optional(bool, false)
-    fs_group         = optional(number)
+    timeout             = optional(number, 300)
+    completions         = optional(number)
+    parallelism         = optional(number)
+    retries             = optional(number, 6)
+    cleanup_finished    = optional(bool, false)
+    keep_failed_process = optional(bool, true)
+    fs_group            = optional(number)
     sysctls = optional(list(object({
       name  = string
       value = string
     })))
   })
   default = {
-    mode             = "once"
-    timeout          = 300
-    retries          = 6
-    cleanup_finished = false
+    mode                = "once"
+    timeout             = 300
+    retries             = 6
+    cleanup_finished    = false
+    keep_failed_process = true
   }
 }
 
