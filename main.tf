@@ -17,6 +17,7 @@ locals {
     "walrus.seal.io/resource-id"    = local.resource_id
   }
   labels = {
+    "walrus.seal.io/catalog-name"     = "terraform-kubernetes-containertask"
     "walrus.seal.io/project-name"     = local.project_name
     "walrus.seal.io/environment-name" = local.environment_name
     "walrus.seal.io/resource-name"    = local.resource_name
