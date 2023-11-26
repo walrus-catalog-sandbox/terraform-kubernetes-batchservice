@@ -174,7 +174,7 @@ components:
               x-walrus-ui:
                 colSpan: 12
                 showIf: mode=periodic
-                order: 3
+                order: 2
             retries:
               description: | 
                 Specify the number of retries before marking this task as failed.
@@ -222,7 +222,7 @@ components:
               type: number
               minimum: 0
               x-walrus-ui:
-                order: 2
+                order: 3
                 colSpan: 4
           required:
           - mode

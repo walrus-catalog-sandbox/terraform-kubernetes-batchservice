@@ -142,11 +142,29 @@ locals {
   ephemeral_files = flatten([
     for _, fs in local.container_ephemeral_files_map : fs
   ])
+  refer_files = flatten([
+    for _, fs in local.container_refer_files_map : fs
+  ])
+
+  ephemeral_mounts = [
+    for _, v in {
+      for m in flatten([
+        for _, ms in local.container_ephemeral_mounts_map : ms
+      ]) : m.name => m...
+    } : v[0]
+  ]
+  refer_mounts = [
+    for _, v in {
+      for m in flatten([
+        for _, ms in local.container_refer_mounts_map : ms
+      ]) : m.name => m...
+    } : v[0]
+  ]
 }
 
 resource "kubernetes_config_map_v1" "ephemeral_files" {
   for_each = {
-    for f in local.ephemeral_files : f.name => f
+    for f in try(nonsensitive(local.ephemeral_files), local.ephemeral_files) : f.name => f
   }
 
   metadata {
@@ -173,6 +191,7 @@ locals {
     WALRUS_PROJECT_NAME     = "walrus.seal.io/project-name"
     WALRUS_ENVIRONMENT_NAME = "walrus.seal.io/environment-name"
     WALRUS_RESOURCE_NAME    = "walrus.seal.io/resource-name"
+    JOB_NAME                = "batch.kubernetes.io/job-name"
   }
 
   completions = try(var.task.completions > 0, false) ? var.task.completions : null
@@ -223,7 +242,10 @@ resource "kubernetes_job_v1" "task" {
           for_each = try(length(var.task.sysctls), 0) > 0 || try(var.task.fs_group != null, false) ? [{}] : []
           content {
             dynamic "sysctl" {
-              for_each = try(var.task.sysctls != null, false) ? var.task.sysctls : []
+              for_each = try(var.task.sysctls != null, false) ? try(
+                nonsensitive(var.task.sysctls),
+                var.task.sysctls
+              ) : []
               content {
                 name  = sysctl.value.name
                 value = sysctl.value.value
@@ -235,7 +257,7 @@ resource "kubernetes_job_v1" "task" {
 
         ### declare ephemeral files.
         dynamic "volume" {
-          for_each = local.ephemeral_files
+          for_each = try(nonsensitive(local.ephemeral_files), local.ephemeral_files)
           content {
             name = volume.value.name
             config_map {
@@ -251,9 +273,7 @@ resource "kubernetes_job_v1" "task" {
 
         ### declare refer files.
         dynamic "volume" {
-          for_each = flatten([
-            for _, fs in local.container_refer_files_map : fs
-          ])
+          for_each = try(nonsensitive(local.refer_files), local.refer_files)
           content {
             name = volume.value.name
             dynamic "config_map" {
@@ -283,13 +303,7 @@ resource "kubernetes_job_v1" "task" {
 
         ### declare ephemeral mounts.
         dynamic "volume" {
-          for_each = [
-            for _, v in {
-              for m in flatten([
-                for _, ms in local.container_ephemeral_mounts_map : ms
-              ]) : m.name => m...
-            } : v[0]
-          ]
+          for_each = try(nonsensitive(local.ephemeral_mounts), local.ephemeral_mounts)
           content {
             name = volume.value.name
             empty_dir {}
@@ -298,13 +312,7 @@ resource "kubernetes_job_v1" "task" {
 
         ### declare refer mounts.
         dynamic "volume" {
-          for_each = [
-            for _, v in {
-              for m in flatten([
-                for _, ms in local.container_refer_mounts_map : ms
-              ]) : m.name => m...
-            } : v[0]
-          ]
+          for_each = try(nonsensitive(local.refer_mounts), local.refer_mounts)
           content {
             name = volume.value.name
             dynamic "config_map" {
@@ -333,7 +341,7 @@ resource "kubernetes_job_v1" "task" {
 
         ### configure init containers.
         dynamic "init_container" {
-          for_each = local.init_containers
+          for_each = try(nonsensitive(local.init_containers), local.init_containers)
           content {
             #### configure basic.
             name              = init_container.value.name
@@ -350,7 +358,10 @@ resource "kubernetes_job_v1" "task" {
 
             #### configure resources.
             dynamic "resources" {
-              for_each = init_container.value.resources != null ? [init_container.value.resources] : []
+              for_each = init_container.value.resources != null ? try(
+                [nonsensitive(init_container.value.resources)],
+                [init_container.value.resources]
+              ) : []
               content {
                 requests = {
                   for k, v in resources.value : "%{if k == "gpu"}${local.gpu_vendor}/%{endif}${k}" => "%{if k == "memory"}${v}Mi%{else}${v}%{endif}"
@@ -389,7 +400,10 @@ resource "kubernetes_job_v1" "task" {
 
             #### configure ephemeral envs.
             dynamic "env" {
-              for_each = local.container_ephemeral_envs_map[init_container.value.name] != null ? local.container_ephemeral_envs_map[init_container.value.name] : []
+              for_each = local.container_ephemeral_envs_map[init_container.value.name] != null ? try(
+                nonsensitive(local.container_ephemeral_envs_map[init_container.value.name]),
+                local.container_ephemeral_envs_map[init_container.value.name]
+              ) : []
               content {
                 name  = env.value.name
                 value = env.value.value
@@ -398,7 +412,10 @@ resource "kubernetes_job_v1" "task" {
 
             #### configure refer envs.
             dynamic "env" {
-              for_each = local.container_refer_envs_map[init_container.value.name] != null ? local.container_refer_envs_map[init_container.value.name] : []
+              for_each = local.container_refer_envs_map[init_container.value.name] != null ? try(
+                nonsensitive(local.container_refer_envs_map[init_container.value.name]),
+                local.container_refer_envs_map[init_container.value.name]
+              ) : []
               content {
                 name = env.value.name
                 value_from {
@@ -412,7 +429,10 @@ resource "kubernetes_job_v1" "task" {
 
             #### configure ephemeral files.
             dynamic "volume_mount" {
-              for_each = local.container_ephemeral_files_map[init_container.value.name] != null ? local.container_ephemeral_files_map[init_container.value.name] : []
+              for_each = local.container_ephemeral_files_map[init_container.value.name] != null ? try(
+                nonsensitive(local.container_ephemeral_files_map[init_container.value.name]),
+                local.container_ephemeral_files_map[init_container.value.name]
+              ) : []
               content {
                 name       = volume_mount.value.name
                 mount_path = dirname(volume_mount.value.path)
@@ -421,7 +441,10 @@ resource "kubernetes_job_v1" "task" {
 
             #### configure refer files.
             dynamic "volume_mount" {
-              for_each = local.container_refer_files_map[init_container.value.name] != null ? local.container_refer_files_map[init_container.value.name] : []
+              for_each = local.container_refer_files_map[init_container.value.name] != null ? try(
+                nonsensitive(local.container_refer_files_map[init_container.value.name]),
+                local.container_refer_files_map[init_container.value.name]
+              ) : []
               content {
                 name       = volume_mount.value.name
                 mount_path = volume_mount.value.path
@@ -431,7 +454,10 @@ resource "kubernetes_job_v1" "task" {
 
             #### configure ephemeral mounts.
             dynamic "volume_mount" {
-              for_each = local.container_ephemeral_mounts_map[init_container.value.name] != null ? local.container_ephemeral_mounts_map[init_container.value.name] : []
+              for_each = local.container_ephemeral_mounts_map[init_container.value.name] != null ? try(
+                nonsensitive(local.container_ephemeral_mounts_map[init_container.value.name]),
+                local.container_ephemeral_mounts_map[init_container.value.name]
+              ) : []
               content {
                 name       = volume_mount.value.name
                 mount_path = volume_mount.value.path
@@ -442,7 +468,10 @@ resource "kubernetes_job_v1" "task" {
 
             #### configure refer mounts.
             dynamic "volume_mount" {
-              for_each = local.container_refer_mounts_map[init_container.value.name] != null ? local.container_refer_mounts_map[init_container.value.name] : []
+              for_each = local.container_refer_mounts_map[init_container.value.name] != null ? try(
+                nonsensitive(local.container_refer_mounts_map[init_container.value.name]),
+                local.container_refer_mounts_map[init_container.value.name]
+              ) : []
               content {
                 name       = volume_mount.value.name
                 mount_path = volume_mount.value.path
@@ -455,7 +484,7 @@ resource "kubernetes_job_v1" "task" {
 
         ### configure run containers.
         dynamic "container" {
-          for_each = local.run_containers
+          for_each = try(nonsensitive(local.run_containers), local.run_containers)
           content {
             #### configure basic.
             name              = container.value.name
@@ -472,7 +501,10 @@ resource "kubernetes_job_v1" "task" {
 
             #### configure resources.
             dynamic "resources" {
-              for_each = container.value.resources != null ? [container.value.resources] : []
+              for_each = container.value.resources != null ? try(
+                [nonsensitive(container.value.resources)],
+                [container.value.resources]
+              ) : []
               content {
                 requests = {
                   for k, v in resources.value : "%{if k == "gpu"}${local.gpu_vendor}/%{endif}${k}" => "%{if k == "memory"}${v}Mi%{else}${v}%{endif}"
@@ -511,7 +543,10 @@ resource "kubernetes_job_v1" "task" {
 
             #### configure ephemeral envs.
             dynamic "env" {
-              for_each = local.container_ephemeral_envs_map[container.value.name] != null ? local.container_ephemeral_envs_map[container.value.name] : []
+              for_each = local.container_ephemeral_envs_map[container.value.name] != null ? try(
+                nonsensitive(local.container_ephemeral_envs_map[container.value.name]),
+                local.container_ephemeral_envs_map[container.value.name]
+              ) : []
               content {
                 name  = env.value.name
                 value = env.value.value
@@ -520,7 +555,10 @@ resource "kubernetes_job_v1" "task" {
 
             #### configure refer envs.
             dynamic "env" {
-              for_each = local.container_refer_envs_map[container.value.name] != null ? local.container_refer_envs_map[container.value.name] : []
+              for_each = local.container_refer_envs_map[container.value.name] != null ? try(
+                nonsensitive(local.container_refer_envs_map[container.value.name]),
+                local.container_refer_envs_map[container.value.name]
+              ) : []
               content {
                 name = env.value.name
                 value_from {
@@ -534,7 +572,10 @@ resource "kubernetes_job_v1" "task" {
 
             #### configure ephemeral files.
             dynamic "volume_mount" {
-              for_each = local.container_ephemeral_files_map[container.value.name] != null ? local.container_ephemeral_files_map[container.value.name] : []
+              for_each = local.container_ephemeral_files_map[container.value.name] != null ? try(
+                nonsensitive(local.container_ephemeral_files_map[container.value.name]),
+                local.container_ephemeral_files_map[container.value.name]
+              ) : []
               content {
                 name       = volume_mount.value.name
                 mount_path = dirname(volume_mount.value.path)
@@ -543,7 +584,10 @@ resource "kubernetes_job_v1" "task" {
 
             #### configure refer files.
             dynamic "volume_mount" {
-              for_each = local.container_refer_files_map[container.value.name] != null ? local.container_refer_files_map[container.value.name] : []
+              for_each = local.container_refer_files_map[container.value.name] != null ? try(
+                nonsensitive(local.container_refer_files_map[container.value.name]),
+                local.container_refer_files_map[container.value.name]
+              ) : []
               content {
                 name       = volume_mount.value.name
                 mount_path = volume_mount.value.path
@@ -553,7 +597,10 @@ resource "kubernetes_job_v1" "task" {
 
             #### configure ephemeral mounts.
             dynamic "volume_mount" {
-              for_each = local.container_ephemeral_mounts_map[container.value.name] != null ? local.container_ephemeral_mounts_map[container.value.name] : []
+              for_each = local.container_ephemeral_mounts_map[container.value.name] != null ? try(
+                nonsensitive(local.container_ephemeral_mounts_map[container.value.name]),
+                local.container_ephemeral_mounts_map[container.value.name]
+              ) : []
               content {
                 name       = volume_mount.value.name
                 mount_path = volume_mount.value.path
@@ -564,7 +611,10 @@ resource "kubernetes_job_v1" "task" {
 
             #### configure refer mounts.
             dynamic "volume_mount" {
-              for_each = local.container_refer_mounts_map[container.value.name] != null ? local.container_refer_mounts_map[container.value.name] : []
+              for_each = local.container_refer_mounts_map[container.value.name] != null ? try(
+                nonsensitive(local.container_refer_mounts_map[container.value.name]),
+                local.container_refer_mounts_map[container.value.name]
+              ) : []
               content {
                 name       = volume_mount.value.name
                 mount_path = volume_mount.value.path
@@ -821,7 +871,10 @@ resource "kubernetes_cron_job_v1" "task" {
               for_each = try(length(var.task.sysctls), 0) > 0 || try(var.task.fs_group != null, false) ? [{}] : []
               content {
                 dynamic "sysctl" {
-                  for_each = try(var.task.sysctls != null, false) ? var.task.sysctls : []
+                  for_each = try(var.task.sysctls != null, false) ? try(
+                    nonsensitive(var.task.sysctls),
+                    var.task.sysctls
+                  ) : []
                   content {
                     name  = sysctl.value.name
                     value = sysctl.value.value
@@ -833,7 +886,7 @@ resource "kubernetes_cron_job_v1" "task" {
 
             ### declare ephemeral files.
             dynamic "volume" {
-              for_each = local.ephemeral_files
+              for_each = try(nonsensitive(local.ephemeral_files), local.ephemeral_files)
               content {
                 name = volume.value.name
                 config_map {
@@ -849,9 +902,7 @@ resource "kubernetes_cron_job_v1" "task" {
 
             ### declare refer files.
             dynamic "volume" {
-              for_each = flatten([
-                for _, fs in local.container_refer_files_map : fs
-              ])
+              for_each = try(nonsensitive(local.refer_files), local.refer_files)
               content {
                 name = volume.value.name
                 dynamic "config_map" {
@@ -881,13 +932,7 @@ resource "kubernetes_cron_job_v1" "task" {
 
             ### declare ephemeral mounts.
             dynamic "volume" {
-              for_each = [
-                for _, v in {
-                  for m in flatten([
-                    for _, ms in local.container_ephemeral_mounts_map : ms
-                  ]) : m.name => m...
-                } : v[0]
-              ]
+              for_each = try(nonsensitive(local.ephemeral_mounts), local.ephemeral_mounts)
               content {
                 name = volume.value.name
                 empty_dir {}
@@ -896,13 +941,7 @@ resource "kubernetes_cron_job_v1" "task" {
 
             ### declare refer mounts.
             dynamic "volume" {
-              for_each = [
-                for _, v in {
-                  for m in flatten([
-                    for _, ms in local.container_refer_mounts_map : ms
-                  ]) : m.name => m...
-                } : v[0]
-              ]
+              for_each = try(nonsensitive(local.refer_mounts), local.refer_mounts)
               content {
                 name = volume.value.name
                 dynamic "config_map" {
@@ -931,7 +970,7 @@ resource "kubernetes_cron_job_v1" "task" {
 
             ### configure init containers.
             dynamic "init_container" {
-              for_each = local.init_containers
+              for_each = try(nonsensitive(local.init_containers), local.init_containers)
               content {
                 #### configure basic.
                 name              = init_container.value.name
@@ -948,7 +987,10 @@ resource "kubernetes_cron_job_v1" "task" {
 
                 #### configure resources.
                 dynamic "resources" {
-                  for_each = init_container.value.resources != null ? [init_container.value.resources] : []
+                  for_each = init_container.value.resources != null ? try(
+                    [nonsensitive(init_container.value.resources)],
+                    [init_container.value.resources]
+                  ) : []
                   content {
                     requests = {
                       for k, v in resources.value : "%{if k == "gpu"}${local.gpu_vendor}/%{endif}${k}" => "%{if k == "memory"}${v}Mi%{else}${v}%{endif}"
@@ -987,7 +1029,10 @@ resource "kubernetes_cron_job_v1" "task" {
 
                 #### configure ephemeral envs.
                 dynamic "env" {
-                  for_each = local.container_ephemeral_envs_map[init_container.value.name] != null ? local.container_ephemeral_envs_map[init_container.value.name] : []
+                  for_each = local.container_ephemeral_envs_map[init_container.value.name] != null ? try(
+                    nonsensitive(local.container_ephemeral_envs_map[init_container.value.name]),
+                    local.container_ephemeral_envs_map[init_container.value.name]
+                  ) : []
                   content {
                     name  = env.value.name
                     value = env.value.value
@@ -996,7 +1041,10 @@ resource "kubernetes_cron_job_v1" "task" {
 
                 #### configure refer envs.
                 dynamic "env" {
-                  for_each = local.container_refer_envs_map[init_container.value.name] != null ? local.container_refer_envs_map[init_container.value.name] : []
+                  for_each = local.container_refer_envs_map[init_container.value.name] != null ? try(
+                    nonsensitive(local.container_refer_envs_map[init_container.value.name]),
+                    local.container_refer_envs_map[init_container.value.name]
+                  ) : []
                   content {
                     name = env.value.name
                     value_from {
@@ -1010,7 +1058,10 @@ resource "kubernetes_cron_job_v1" "task" {
 
                 #### configure ephemeral files.
                 dynamic "volume_mount" {
-                  for_each = local.container_ephemeral_files_map[init_container.value.name] != null ? local.container_ephemeral_files_map[init_container.value.name] : []
+                  for_each = local.container_ephemeral_files_map[init_container.value.name] != null ? try(
+                    nonsensitive(local.container_ephemeral_files_map[init_container.value.name]),
+                    local.container_ephemeral_files_map[init_container.value.name]
+                  ) : []
                   content {
                     name       = volume_mount.value.name
                     mount_path = dirname(volume_mount.value.path)
@@ -1019,7 +1070,10 @@ resource "kubernetes_cron_job_v1" "task" {
 
                 #### configure refer files.
                 dynamic "volume_mount" {
-                  for_each = local.container_refer_files_map[init_container.value.name] != null ? local.container_refer_files_map[init_container.value.name] : []
+                  for_each = local.container_refer_files_map[init_container.value.name] != null ? try(
+                    nonsensitive(local.container_refer_files_map[init_container.value.name]),
+                    local.container_refer_files_map[init_container.value.name]
+                  ) : []
                   content {
                     name       = volume_mount.value.name
                     mount_path = volume_mount.value.path
@@ -1029,7 +1083,10 @@ resource "kubernetes_cron_job_v1" "task" {
 
                 #### configure ephemeral mounts.
                 dynamic "volume_mount" {
-                  for_each = local.container_ephemeral_mounts_map[init_container.value.name] != null ? local.container_ephemeral_mounts_map[init_container.value.name] : []
+                  for_each = local.container_ephemeral_mounts_map[init_container.value.name] != null ? try(
+                    nonsensitive(local.container_ephemeral_mounts_map[init_container.value.name]),
+                    local.container_ephemeral_mounts_map[init_container.value.name]
+                  ) : []
                   content {
                     name       = volume_mount.value.name
                     mount_path = volume_mount.value.path
@@ -1040,7 +1097,10 @@ resource "kubernetes_cron_job_v1" "task" {
 
                 #### configure refer mounts.
                 dynamic "volume_mount" {
-                  for_each = local.container_refer_mounts_map[init_container.value.name] != null ? local.container_refer_mounts_map[init_container.value.name] : []
+                  for_each = local.container_refer_mounts_map[init_container.value.name] != null ? try(
+                    nonsensitive(local.container_refer_mounts_map[init_container.value.name]),
+                    local.container_refer_mounts_map[init_container.value.name]
+                  ) : []
                   content {
                     name       = volume_mount.value.name
                     mount_path = volume_mount.value.path
@@ -1053,7 +1113,7 @@ resource "kubernetes_cron_job_v1" "task" {
 
             ### configure run containers.
             dynamic "container" {
-              for_each = local.run_containers
+              for_each = try(nonsensitive(local.run_containers), local.run_containers)
               content {
                 #### configure basic.
                 name              = container.value.name
@@ -1070,7 +1130,10 @@ resource "kubernetes_cron_job_v1" "task" {
 
                 #### configure resources.
                 dynamic "resources" {
-                  for_each = container.value.resources != null ? [container.value.resources] : []
+                  for_each = container.value.resources != null ? try(
+                    [nonsensitive(container.value.resources)],
+                    [container.value.resources]
+                  ) : []
                   content {
                     requests = {
                       for k, v in resources.value : "%{if k == "gpu"}${local.gpu_vendor}/%{endif}${k}" => "%{if k == "memory"}${v}Mi%{else}${v}%{endif}"
@@ -1109,7 +1172,10 @@ resource "kubernetes_cron_job_v1" "task" {
 
                 #### configure ephemeral envs.
                 dynamic "env" {
-                  for_each = local.container_ephemeral_envs_map[container.value.name] != null ? local.container_ephemeral_envs_map[container.value.name] : []
+                  for_each = local.container_ephemeral_envs_map[container.value.name] != null ? try(
+                    nonsensitive(local.container_ephemeral_envs_map[container.value.name]),
+                    local.container_ephemeral_envs_map[container.value.name]
+                  ) : []
                   content {
                     name  = env.value.name
                     value = env.value.value
@@ -1118,7 +1184,10 @@ resource "kubernetes_cron_job_v1" "task" {
 
                 #### configure refer envs.
                 dynamic "env" {
-                  for_each = local.container_refer_envs_map[container.value.name] != null ? local.container_refer_envs_map[container.value.name] : []
+                  for_each = local.container_refer_envs_map[container.value.name] != null ? try(
+                    nonsensitive(local.container_refer_envs_map[container.value.name]),
+                    local.container_refer_envs_map[container.value.name]
+                  ) : []
                   content {
                     name = env.value.name
                     value_from {
@@ -1132,7 +1201,10 @@ resource "kubernetes_cron_job_v1" "task" {
 
                 #### configure ephemeral files.
                 dynamic "volume_mount" {
-                  for_each = local.container_ephemeral_files_map[container.value.name] != null ? local.container_ephemeral_files_map[container.value.name] : []
+                  for_each = local.container_ephemeral_files_map[container.value.name] != null ? try(
+                    nonsensitive(local.container_ephemeral_files_map[container.value.name]),
+                    local.container_ephemeral_files_map[container.value.name]
+                  ) : []
                   content {
                     name       = volume_mount.value.name
                     mount_path = dirname(volume_mount.value.path)
@@ -1141,7 +1213,10 @@ resource "kubernetes_cron_job_v1" "task" {
 
                 #### configure refer files.
                 dynamic "volume_mount" {
-                  for_each = local.container_refer_files_map[container.value.name] != null ? local.container_refer_files_map[container.value.name] : []
+                  for_each = local.container_refer_files_map[container.value.name] != null ? try(
+                    nonsensitive(local.container_refer_files_map[container.value.name]),
+                    local.container_refer_files_map[container.value.name]
+                  ) : []
                   content {
                     name       = volume_mount.value.name
                     mount_path = volume_mount.value.path
@@ -1151,7 +1226,10 @@ resource "kubernetes_cron_job_v1" "task" {
 
                 #### configure ephemeral mounts.
                 dynamic "volume_mount" {
-                  for_each = local.container_ephemeral_mounts_map[container.value.name] != null ? local.container_ephemeral_mounts_map[container.value.name] : []
+                  for_each = local.container_ephemeral_mounts_map[container.value.name] != null ? try(
+                    nonsensitive(local.container_ephemeral_mounts_map[container.value.name]),
+                    local.container_ephemeral_mounts_map[container.value.name]
+                  ) : []
                   content {
                     name       = volume_mount.value.name
                     mount_path = volume_mount.value.path
@@ -1162,7 +1240,10 @@ resource "kubernetes_cron_job_v1" "task" {
 
                 #### configure refer mounts.
                 dynamic "volume_mount" {
-                  for_each = local.container_refer_mounts_map[container.value.name] != null ? local.container_refer_mounts_map[container.value.name] : []
+                  for_each = local.container_refer_mounts_map[container.value.name] != null ? try(
+                    nonsensitive(local.container_refer_mounts_map[container.value.name]),
+                    local.container_refer_mounts_map[container.value.name]
+                  ) : []
                   content {
                     name       = volume_mount.value.name
                     mount_path = volume_mount.value.path
