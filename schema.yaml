@@ -257,7 +257,7 @@ components:
                         order: 6
                     execute:
                       description: |
-                        Configure the exeuction action.
+                        Configure the execution action.
                       nullable: true
                       properties:
                         command:
