@@ -627,7 +627,7 @@ resource "kubernetes_job_v1" "task" {
             dynamic "startup_probe" {
               for_each = [
                 for ck in container.value.checks : ck
-                if try(ck.delay > 0 && !ck.teardown, false)
+                if try(ck.delay > 0 && ck.teardown, false)
               ]
               content {
                 initial_delay_seconds = startup_probe.value.delay
@@ -662,8 +662,8 @@ resource "kubernetes_job_v1" "task" {
                     dynamic "http_header" {
                       for_each = try(http_get.value.headers != null, false) ? http_get.value.headers : {}
                       content {
-                        name  = http_header.value.name
-                        value = http_header.value.value
+                        name  = http_header.key
+                        value = http_header.value
                       }
                     }
                   }
@@ -677,8 +677,8 @@ resource "kubernetes_job_v1" "task" {
                     dynamic "http_header" {
                       for_each = try(http_get.value.headers != null, false) ? http_get.value.headers : {}
                       content {
-                        name  = http_header.value.name
-                        value = http_header.value.value
+                        name  = http_header.key
+                        value = http_header.value
                       }
                     }
                   }
@@ -689,7 +689,7 @@ resource "kubernetes_job_v1" "task" {
             dynamic "readiness_probe" {
               for_each = [
                 for ck in container.value.checks : ck
-                if try(ck.delay == 0 && !ck.teardown, false)
+                if try(!ck.teardown, false)
               ]
               content {
                 initial_delay_seconds = readiness_probe.value.delay
@@ -724,8 +724,8 @@ resource "kubernetes_job_v1" "task" {
                     dynamic "http_header" {
                       for_each = try(http_get.value.headers != null, false) ? http_get.value.headers : {}
                       content {
-                        name  = http_header.value.name
-                        value = http_header.value.value
+                        name  = http_header.key
+                        value = http_header.value
                       }
                     }
                   }
@@ -739,8 +739,8 @@ resource "kubernetes_job_v1" "task" {
                     dynamic "http_header" {
                       for_each = try(http_get.value.headers != null, false) ? http_get.value.headers : {}
                       content {
-                        name  = http_header.value.name
-                        value = http_header.value.value
+                        name  = http_header.key
+                        value = http_header.value
                       }
                     }
                   }
@@ -754,10 +754,9 @@ resource "kubernetes_job_v1" "task" {
                 if try(ck.teardown, false)
               ]
               content {
-                initial_delay_seconds = liveness_probe.value.delay
-                period_seconds        = liveness_probe.value.interval
-                timeout_seconds       = liveness_probe.value.timeout
-                failure_threshold     = liveness_probe.value.retries
+                period_seconds    = liveness_probe.value.interval
+                timeout_seconds   = liveness_probe.value.timeout
+                failure_threshold = liveness_probe.value.retries
                 dynamic "exec" {
                   for_each = liveness_probe.value.type == "execute" ? [liveness_probe.value.execute] : []
                   content {
@@ -786,8 +785,8 @@ resource "kubernetes_job_v1" "task" {
                     dynamic "http_header" {
                       for_each = try(http_get.value.headers != null, false) ? http_get.value.headers : {}
                       content {
-                        name  = http_header.value.name
-                        value = http_header.value.value
+                        name  = http_header.key
+                        value = http_header.value
                       }
                     }
                   }
@@ -801,8 +800,8 @@ resource "kubernetes_job_v1" "task" {
                     dynamic "http_header" {
                       for_each = try(http_get.value.headers != null, false) ? http_get.value.headers : {}
                       content {
-                        name  = http_header.value.name
-                        value = http_header.value.value
+                        name  = http_header.key
+                        value = http_header.value
                       }
                     }
                   }
@@ -1256,7 +1255,7 @@ resource "kubernetes_cron_job_v1" "task" {
                 dynamic "startup_probe" {
                   for_each = [
                     for ck in container.value.checks : ck
-                    if try(ck.delay > 0 && !ck.teardown, false)
+                    if try(ck.delay > 0 && ck.teardown, false)
                   ]
                   content {
                     initial_delay_seconds = startup_probe.value.delay
@@ -1291,8 +1290,8 @@ resource "kubernetes_cron_job_v1" "task" {
                         dynamic "http_header" {
                           for_each = try(http_get.value.headers != null, false) ? http_get.value.headers : {}
                           content {
-                            name  = http_header.value.name
-                            value = http_header.value.value
+                            name  = http_header.key
+                            value = http_header.value
                           }
                         }
                       }
@@ -1306,8 +1305,8 @@ resource "kubernetes_cron_job_v1" "task" {
                         dynamic "http_header" {
                           for_each = try(http_get.value.headers != null, false) ? http_get.value.headers : {}
                           content {
-                            name  = http_header.value.name
-                            value = http_header.value.value
+                            name  = http_header.key
+                            value = http_header.value
                           }
                         }
                       }
@@ -1318,7 +1317,7 @@ resource "kubernetes_cron_job_v1" "task" {
                 dynamic "readiness_probe" {
                   for_each = [
                     for ck in container.value.checks : ck
-                    if try(ck.delay == 0 && !ck.teardown, false)
+                    if try(!ck.teardown, false)
                   ]
                   content {
                     initial_delay_seconds = readiness_probe.value.delay
@@ -1353,8 +1352,8 @@ resource "kubernetes_cron_job_v1" "task" {
                         dynamic "http_header" {
                           for_each = try(http_get.value.headers != null, false) ? http_get.value.headers : {}
                           content {
-                            name  = http_header.value.name
-                            value = http_header.value.value
+                            name  = http_header.key
+                            value = http_header.value
                           }
                         }
                       }
@@ -1368,8 +1367,8 @@ resource "kubernetes_cron_job_v1" "task" {
                         dynamic "http_header" {
                           for_each = try(http_get.value.headers != null, false) ? http_get.value.headers : {}
                           content {
-                            name  = http_header.value.name
-                            value = http_header.value.value
+                            name  = http_header.key
+                            value = http_header.value
                           }
                         }
                       }
@@ -1383,10 +1382,9 @@ resource "kubernetes_cron_job_v1" "task" {
                     if try(ck.teardown, false)
                   ]
                   content {
-                    initial_delay_seconds = liveness_probe.value.delay
-                    period_seconds        = liveness_probe.value.interval
-                    timeout_seconds       = liveness_probe.value.timeout
-                    failure_threshold     = liveness_probe.value.retries
+                    period_seconds    = liveness_probe.value.interval
+                    timeout_seconds   = liveness_probe.value.timeout
+                    failure_threshold = liveness_probe.value.retries
                     dynamic "exec" {
                       for_each = liveness_probe.value.type == "execute" ? [liveness_probe.value.execute] : []
                       content {
@@ -1415,8 +1413,8 @@ resource "kubernetes_cron_job_v1" "task" {
                         dynamic "http_header" {
                           for_each = try(http_get.value.headers != null, false) ? http_get.value.headers : {}
                           content {
-                            name  = http_header.value.name
-                            value = http_header.value.value
+                            name  = http_header.key
+                            value = http_header.value
                           }
                         }
                       }
@@ -1430,8 +1428,8 @@ resource "kubernetes_cron_job_v1" "task" {
                         dynamic "http_header" {
                           for_each = try(http_get.value.headers != null, false) ? http_get.value.headers : {}
                           content {
-                            name  = http_header.value.name
-                            value = http_header.value.value
+                            name  = http_header.key
+                            value = http_header.value
                           }
                         }
                       }
