@@ -4,9 +4,9 @@ info:
 components:
   schemas:
     variables:
+      type: object
       required:
       - containers
-      type: object
       properties:
         context:
           title: Context
@@ -33,18 +33,18 @@ components:
           nullable: true
           properties:
             gpu_vendor:
+              default: nvidia.com
               description: |
                 Specify the GPU vendor, default is `nvdia.com`.
-              default: "nvidia.com"
               nullable: true
               title: Gpu Vendor
               type: string
               x-walrus-ui:
                 order: 2
             namespace:
+              nullable: true
               title: Namespace
               type: string
-              nullable: true
               x-walrus-ui:
                 hidden: true
                 order: 1
@@ -57,80 +57,84 @@ components:
           type: object
           description: |
             Specify the task action, like execution, security and so on.
-          default: 
-            mode: "once"
-            retries: 6
-            timeout: 300
+          default:
             cleanup_finished: false
             keep_failed_process: true
+            mode: once
+            retries: 6
+            timeout: 300
+          nullable: true
+          required:
+          - mode
           properties:
             cleanup_finished:
+              default: false
               description: |
                 Specify whether to cleanup the finished task after 5m.
-              default: false
               nullable: true
               title: Cleanup Finished
               type: boolean
               x-walrus-ui:
-                order: 7
                 colSpan: 4
+                order: 7
+            completions:
+              description: |
+                Specify the desired number of successfully finished processes the task should be run with.
+              minimum: 1
+              nullable: true
+              title: Completions
+              type: number
+              x-walrus-ui:
+                colSpan: 4
+                order: 4
+            fs_group:
+              description: |
+                Specify a special supplemental group that applies to all containers in a pod.
+              minimum: 0
+              nullable: true
+              title: Fs Group
+              type: number
+              x-walrus-ui:
+                colSpan: 6
+                order: 9
             keep_failed_process:
+              default: true
               description: |
                 Specify whether to keep the failed task.
-              default: true
               nullable: true
               title: Keep Failed Process
               type: boolean
               x-walrus-ui:
+                colSpan: 4
                 order: 8
-                colSpan: 4
-            completions:
-              description: |
-                Specify the desired number of successfully finished processes the task should be run with.
-              nullable: true
-              title: Completions
-              type: number
-              minimum: 1
-              x-walrus-ui:
-                order: 4
-                colSpan: 4
-            fs_group:
-              description: |
-                Specify a special supplemental group that applies to all containers in a pod.
-              nullable: true
-              title: Fs Group
-              type: number
-              minimum: 0
-              x-walrus-ui:
-                order: 9
-                colSpan: 6
             mode:
+              default: once
               description: |
                 Specify the mode of the task, select from once or periodic.
-              default: once
+              enum:
+              - once
+              - periodic
+              nullable: true
               title: Mode
               type: string
-              enum:
-              - "once"
-              - "periodic"
               x-walrus-ui:
-                order: 1
                 colSpan: 12
+                order: 1
             parallelism:
               description: |
                 Specify the maximum desired number of processes the task should run at any given time.
-              nullable: true
               minimum: 1
+              nullable: true
               title: Parallelism
               type: number
               x-walrus-ui:
-                order: 5
                 colSpan: 4
+                order: 5
             periodic:
               nullable: true
               properties:
                 cron_expression:
-                  description: | 
+                  description: |
                     Specify the Cron Expression of the periodic task.
                   title: Cron Expression
                   type: string
@@ -138,10 +142,10 @@ components:
                     colSpan: 6
                     order: 1
                 keep_unfinished:
+                  default: false
                   description: |
                     Specify whether to keep unfinished task when the scheduling time arrives.
                     When set to true, if the previous task has not completed, the new task will not be launched.
-                  default: false
                   nullable: true
                   title: Keep Unfinished
                   type: boolean
@@ -149,9 +153,9 @@ components:
                     colSpan: 6
                     order: 3
                 suspend:
+                  default: false
                   description: |
                     Specify whether to suspend the periodic task.
-                  default: false
                   nullable: true
                   title: Suspend
                   type: boolean
@@ -173,23 +177,22 @@ components:
               type: object
               x-walrus-ui:
                 colSpan: 12
-                showIf: mode=periodic
                 order: 2
+                showIf: mode=periodic
             retries:
-              description: | 
-                Specify the number of retries before marking this task as failed.
               default: 6
+              description: |
+                Specify the number of retries before marking this task as failed.
+              minimum: 1
               nullable: true
               title: Retries
               type: number
-              minimum: 1
               x-walrus-ui:
-                order: 6
                 colSpan: 4
+                order: 6
             sysctls:
               description: |
                 Specify the namespaced sysctls for the pod.
-              nullable: true
               items:
                 properties:
                   name:
@@ -197,35 +200,38 @@ components:
                       Specify the name of the sysctl, select from https://kubernetes.io/docs/tasks/administer-cluster/sysctl-cluster/#listing-all-sysctl-parameters.
                     title: Name
                     type: string
+                    x-walrus-ui:
+                      order: 1
                   value:
                     description: |
                       Specify the value of the sysctl.
                     title: Value
                     type: string
+                    x-walrus-ui:
+                      order: 2
                 required:
                 - name
                 - value
                 type: object
                 x-walrus-ui:
                   colSpan: 6
+              nullable: true
               title: Sysctls
               type: array
               x-walrus-ui:
                 colSpan: 6
                 order: 10
             timeout:
+              default: 300
               description: |
                 Specify the maximum time in seconds for a task to be active before it is terminated.
-              default: 300
+              minimum: 0
               nullable: true
               title: Timeout(Sec)
               type: number
-              minimum: 0
               x-walrus-ui:
-                order: 3
                 colSpan: 4
-          required:
-          - mode
+                order: 3
           x-walrus-ui:
             colSpan: 12
             group: Advanced
@@ -233,23 +239,22 @@ components:
         containers:
           title: Containers
           type: array
-          minItems: 1
           description: |
             Specify the container items to deploy.
+          minItems: 1
           items:
             properties:
               checks:
                 description: |
                   Configure the healthz checks.
-                nullable: true
                 items:
                   properties:
                     delay:
+                      default: 0
                       description: |
                         Specify the delay time before starting the check.
-                      default: 0
-                      nullable: true
                       minimum: 0
+                      nullable: true
                       title: Delay(Sec)
                       type: number
                       x-walrus-ui:
@@ -269,62 +274,35 @@ components:
                           type: array
                           x-walrus-ui:
                             colSpan: 12
+                            order: 1
                       required:
                       - command
                       title: Execute
                       type: object
                       x-walrus-ui:
                         colSpan: 12
+                        order: 2
                         showIf: type=execute
-                        order: 2
-                    grpc:
-                      description: |
-                        Configure the grpc check.
-                      nullable: true
-                      properties:
-                        port:
-                          description: |
-                            Specify the port of the grpc service.
-                          title: Port
-                          type: number
-                          x-walrus-ui:
-                            order: 1
-                        service:
-                          description: |
-                            Specify the service name of the grpc service.
-                          nullable: true
-                          title: Service
-                          type: string
-                          x-walrus-ui:
-                            order: 2
-                      required:
-                      - port
-                      title: Grpc
-                      type: object
-                      x-walrus-ui:
-                        colSpan: 12
-                        showIf: type=grpc
-                        order: 2
                     http:
                       description: |
                         Configure the http check.
                       nullable: true
                       properties:
                         headers:
+                          additionalProperties:
+                            type: string
                           description: |
                             Specify the headers of the http request. To pin the Hostname, please use `Host` header.
                           nullable: true
-                          additionalProperties:
-                            type: string
                           title: Headers
                           type: object
                           x-walrus-ui:
                             colSpan: 12
                             order: 3
                         path:
+                          default: /
                           description: |
                             Specify the path of the http request.
-                          default: "/"
                           nullable: true
                           title: Path
                           type: string
@@ -343,29 +321,29 @@ components:
                       type: object
                       x-walrus-ui:
                         colSpan: 12
-                        showIf: type=http
                         order: 2
+                        showIf: type=http
                     https:
                       description: |
                         Configure the https check.
                       nullable: true
                       properties:
                         headers:
+                          additionalProperties:
+                            type: string
                           description: |
                             Specify the headers of the http request. To pin the Hostname, please use `Host` header.
                           nullable: true
-                          additionalProperties:
-                            type: string
                           title: Headers
                           type: object
                           x-walrus-ui:
                             colSpan: 12
                             order: 3
                         path:
+                          default: /
                           description: |
                             Specify the path of the http request.
                           nullable: true
-                          default: "/"
                           title: Path
                           type: string
                           x-walrus-ui:
@@ -383,27 +361,27 @@ components:
                       type: object
                       x-walrus-ui:
                         colSpan: 12
-                        showIf: type=https
                         order: 2
+                        showIf: type=https
                     interval:
+                      default: 10
                       description: |
                         Specify how often to do the check.
-                      default: 10
+                      minimum: 5
                       nullable: true
                       title: Interval
                       type: number
-                      minimum: 5
                       x-walrus-ui:
                         colSpan: 4
                         order: 4
                     retries:
+                      default: 1
                       description: |
                         Specify the number of retries before marking this check as failed.
-                      default: 1
+                      minimum: 1
                       nullable: true
                       title: Retries
                       type: number
-                      minimum: 1
                       x-walrus-ui:
                         colSpan: 4
                         order: 3
@@ -417,18 +395,20 @@ components:
                             Specify the port of the tcp service.
                           title: Port
                           type: number
+                          x-walrus-ui:
+                            order: 1
                       required:
                       - port
                       title: Tcp
                       type: object
                       x-walrus-ui:
                         colSpan: 12
-                        showIf: type=tcp
                         order: 2
+                        showIf: type=tcp
                     teardown:
+                      default: false
                       description: |
                         Specify whether to teardown the pod if the check failed.
-                      default: false
                       nullable: true
                       title: Teardown
                       type: boolean
@@ -436,28 +416,27 @@ components:
                         colSpan: 4
                         order: 7
                     timeout:
+                      default: 1
                       description: |
                         Specify the timeout of the check.
-                      default: 1
+                      minimum: 1
                       nullable: true
                       title: Timeout(Sec)
                       type: number
-                      minimum: 1
                       x-walrus-ui:
                         colSpan: 4
                         order: 5
                     type:
+                      default: http
                       description: |
                         Specify the type of the check.
-                      default: http
-                      title: Type
-                      type: string
                       enum:
                       - execute
                       - tcp
-                      - grpc
                       - http
                       - https
+                      title: Type
+                      type: string
                       x-walrus-ui:
                         colSpan: 12
                         order: 1
@@ -466,6 +445,7 @@ components:
                   type: object
                   x-walrus-ui:
                     colSpan: 12
+                nullable: true
                 title: Checks
                 type: array
                 x-walrus-ui:
@@ -475,7 +455,6 @@ components:
               envs:
                 description: |
                   Configure the environment variables.
-                nullable: true
                 items:
                   properties:
                     name:
@@ -484,23 +463,52 @@ components:
                       title: Name
                       type: string
                       x-walrus-ui:
-                        order: 1
                         colSpan: 6
+                        order: 1
                     value:
-                      description: |
-                        Specify the value of the environment variable. 
-                        Value changes will be propagated and affect tasks that are running or will be run, also have impact on finished once tasks.
+                      description: "Specify the value of the environment variable.
+                        \nValue changes will be propagated and affect tasks that are
+                        running or will be run, also have impact on finished once
+                        tasks.\n"
                       nullable: true
                       title: Value
                       type: string
                       x-walrus-ui:
-                        order: 2
                         colSpan: 6
+                        order: 2
+                    value_refer:
+                      nullable: true
+                      properties:
+                        params:
+                          additionalProperties:
+                            type: object
+                            x-walrus-ui:
+                              colSpan: 12
+                          title: Params
+                          type: object
+                          x-walrus-ui:
+                            colSpan: 12
+                            order: 2
+                        schema:
+                          title: Schema
+                          type: string
+                          x-walrus-ui:
+                            order: 1
+                      required:
+                      - params
+                      - schema
+                      title: Value Refer
+                      type: object
+                      x-walrus-ui:
+                        colSpan: 12
+                        hidden: true
+                        order: 3
                   required:
                   - name
                   type: object
                   x-walrus-ui:
                     colSpan: 12
+                nullable: true
                 title: Envs
                 type: array
                 x-walrus-ui:
@@ -514,9 +522,9 @@ components:
                   args:
                     description: |
                       Specify the arguments of the command.
-                    nullable: true
                     items:
                       type: string
+                    nullable: true
                     title: Args
                     type: array
                     x-walrus-ui:
@@ -525,35 +533,36 @@ components:
                   as_group:
                     description: |
                       Specify the group id to run the command.
+                    minimum: 0
                     nullable: true
                     title: As Group
                     type: number
-                    minimum: 0
                     x-walrus-ui:
                       colSpan: 4
                       order: 4
                   as_user:
                     description: |
                       Specify the user id to run the command.
+                    minimum: 0
                     nullable: true
                     title: As User
                     type: number
-                    minimum: 0
                     x-walrus-ui:
                       colSpan: 4
                       order: 5
                   command:
                     description: |
                       Specify the entrypoint of the container.
-                    nullable: true
                     items:
                       type: string
+                    nullable: true
                     title: Command
                     type: array
                     x-walrus-ui:
                       colSpan: 12
                       order: 1
                   readonly_rootfs:
+                    default: false
                     description: |
                       Specify whether to mount the rootfs as readonly.
                     nullable: true
@@ -579,45 +588,72 @@ components:
               files:
                 description: |
                   Configure the files.
-                nullable: true
                 items:
                   properties:
                     content:
                       description: |
                         Specify the content of the (configuration) file.
                         Value source changes will be propagated and will affect tasks that are running or will be run.
-                      nullable: true                      
+                      nullable: true
                       title: Content
                       type: string
                       x-walrus-ui:
-                        widget: TextArea
-                        order: 3
                         colSpan: 12
+                        order: 3
+                        widget: TextArea
+                    content_refer:
+                      nullable: true
+                      properties:
+                        params:
+                          additionalProperties:
+                            type: object
+                            x-walrus-ui:
+                              colSpan: 12
+                          title: Params
+                          type: object
+                          x-walrus-ui:
+                            colSpan: 12
+                            order: 2
+                        schema:
+                          title: Schema
+                          type: string
+                          x-walrus-ui:
+                            order: 1
+                      required:
+                      - params
+                      - schema
+                      title: Content Refer
+                      type: object
+                      x-walrus-ui:
+                        colSpan: 12
+                        hidden: true
+                        order: 4
                     mode:
+                      default: "0644"
                       description: |
                         Specify the mode of the (configuration) file, default is 0644.
-                      default: "0644"
-                      nullable: true
                       maxLength: 4
                       minLength: 4
+                      nullable: true
                       title: Mode
                       type: string
                       x-walrus-ui:
-                        order: 2
                         colSpan: 6
+                        order: 2
                     path:
                       description: |
                         Specify the mounting path of the (configuration) file.
                       title: Path
                       type: string
                       x-walrus-ui:
-                        order: 1
                         colSpan: 6
+                        order: 1
                   required:
                   - path
                   type: object
                   x-walrus-ui:
                     colSpan: 12
+                nullable: true
                 title: Files
                 type: array
                 x-walrus-ui:
@@ -631,7 +667,6 @@ components:
               mounts:
                 description: |
                   Configure the mounts.
-                nullable: true
                 items:
                   properties:
                     path:
@@ -643,12 +678,12 @@ components:
                         colSpan: 6
                         order: 1
                     readonly:
+                      default: false
                       description: |
                         Specify whether to mount the volume as readonly.
+                      nullable: true
                       title: Readonly
                       type: boolean
-                      default: false
-                      nullable: true
                       x-walrus-ui:
                         colSpan: 6
                         order: 4
@@ -662,72 +697,101 @@ components:
                         colSpan: 6
                         order: 3
                     volume:
-                      description: |
-                        Specify the name of the ephemeral volume which shares between multiple containers. 
-                        If not specified, the ephemeral volume is exclusively mounted by this container.
+                      description: "Specify the name of the ephemeral volume which
+                        shares between multiple containers. \nIf not specified, the
+                        ephemeral volume is exclusively mounted by this container.\n"
                       nullable: true
                       title: Volume
                       type: string
                       x-walrus-ui:
                         colSpan: 6
                         order: 2
+                    volume_refer:
+                      nullable: true
+                      properties:
+                        params:
+                          additionalProperties:
+                            type: object
+                            x-walrus-ui:
+                              colSpan: 12
+                          title: Params
+                          type: object
+                          x-walrus-ui:
+                            colSpan: 12
+                            order: 2
+                        schema:
+                          title: Schema
+                          type: string
+                          x-walrus-ui:
+                            order: 1
+                      required:
+                      - params
+                      - schema
+                      title: Volume Refer
+                      type: object
+                      x-walrus-ui:
+                        colSpan: 12
+                        hidden: true
+                        order: 5
                   required:
                   - path
                   type: object
                   x-walrus-ui:
                     colSpan: 12
+                nullable: true
                 title: Mounts
                 type: array
                 x-walrus-ui:
                   colSpan: 6
                   order: 7
               profile:
-                description: | 
+                default: run
+                description: |
                   Specify the profile of the container, select from init or run.
-                default: "run"
-                title: Profile
-                type: string
                 enum:
                 - run
                 - init
+                nullable: true
+                title: Profile
+                type: string
                 x-walrus-ui:
                   order: 2
               resources:
                 nullable: true
                 properties:
                   cpu:
+                    default: 0.25
                     description: |
                       Specify the cpu resources. Unit is core.
-                    default: 0.25
+                    minimum: 0.1
                     nullable: true
                     title: Cpu(Core)
                     type: number
-                    minimum: 0.1
                     x-walrus-ui:
-                      order: 1
                       colSpan: 4
+                      order: 1
                   gpu:
+                    default: 0
                     description: |
                       Specify the gpu resources. Unit is core.
-                    default: 0
+                    minimum: 0
                     nullable: true
                     title: Gpu(Core)
                     type: number
-                    minimum: 0
                     x-walrus-ui:
-                      order: 3
                       colSpan: 4
+                      order: 3
                   memory:
+                    default: 256
                     description: |
                       Specify the memory resources. Unit is megabyte.
-                    default: 256
+                    minimum: 10
                     nullable: true
                     title: Memory(MiB)
                     type: number
-                    minimum: 10
                     x-walrus-ui:
-                      order: 2
                       colSpan: 4
+                      order: 2
                 title: Resources
                 type: object
                 x-walrus-ui:
@@ -745,5 +809,5 @@ components:
             order: 4
       x-walrus-ui:
         groupOrder:
-          - Basic
-          - Advanced
+        - Basic
+        - Advanced

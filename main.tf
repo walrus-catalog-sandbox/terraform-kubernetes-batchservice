@@ -646,13 +646,6 @@ resource "kubernetes_job_v1" "task" {
                     port = tcp_socket.value.port
                   }
                 }
-                dynamic "grpc" {
-                  for_each = startup_probe.value.type == "grpc" ? [startup_probe.value.grpc] : []
-                  content {
-                    port    = grpc.value.port
-                    service = grpc.value.service
-                  }
-                }
                 dynamic "http_get" {
                   for_each = startup_probe.value.type == "http" ? [startup_probe.value.http] : []
                   content {
@@ -708,13 +701,6 @@ resource "kubernetes_job_v1" "task" {
                     port = tcp_socket.value.port
                   }
                 }
-                dynamic "grpc" {
-                  for_each = readiness_probe.value.type == "grpc" ? [readiness_probe.value.grpc] : []
-                  content {
-                    port    = grpc.value.port
-                    service = grpc.value.service
-                  }
-                }
                 dynamic "http_get" {
                   for_each = readiness_probe.value.type == "http" ? [readiness_probe.value.http] : []
                   content {
@@ -767,13 +753,6 @@ resource "kubernetes_job_v1" "task" {
                   for_each = liveness_probe.value.type == "tcp" ? [liveness_probe.value.tcp] : []
                   content {
                     port = tcp_socket.value.port
-                  }
-                }
-                dynamic "grpc" {
-                  for_each = liveness_probe.value.type == "grpc" ? [liveness_probe.value.grpc] : []
-                  content {
-                    port    = grpc.value.port
-                    service = grpc.value.service
                   }
                 }
                 dynamic "http_get" {
@@ -1274,13 +1253,6 @@ resource "kubernetes_cron_job_v1" "task" {
                         port = tcp_socket.value.port
                       }
                     }
-                    dynamic "grpc" {
-                      for_each = startup_probe.value.type == "grpc" ? [startup_probe.value.grpc] : []
-                      content {
-                        port    = grpc.value.port
-                        service = grpc.value.service
-                      }
-                    }
                     dynamic "http_get" {
                       for_each = startup_probe.value.type == "http" ? [startup_probe.value.http] : []
                       content {
@@ -1336,13 +1308,6 @@ resource "kubernetes_cron_job_v1" "task" {
                         port = tcp_socket.value.port
                       }
                     }
-                    dynamic "grpc" {
-                      for_each = readiness_probe.value.type == "grpc" ? [readiness_probe.value.grpc] : []
-                      content {
-                        port    = grpc.value.port
-                        service = grpc.value.service
-                      }
-                    }
                     dynamic "http_get" {
                       for_each = readiness_probe.value.type == "http" ? [readiness_probe.value.http] : []
                       content {
@@ -1395,13 +1360,6 @@ resource "kubernetes_cron_job_v1" "task" {
                       for_each = liveness_probe.value.type == "tcp" ? [liveness_probe.value.tcp] : []
                       content {
                         port = tcp_socket.value.port
-                      }
-                    }
-                    dynamic "grpc" {
-                      for_each = liveness_probe.value.type == "grpc" ? [liveness_probe.value.grpc] : []
-                      content {
-                        port    = grpc.value.port
-                        service = grpc.value.service
                       }
                     }
                     dynamic "http_get" {
