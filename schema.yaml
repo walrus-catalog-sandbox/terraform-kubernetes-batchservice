@@ -64,8 +64,6 @@ components:
             retries: 6
             timeout: 300
           nullable: true
-          required:
-          - mode
           properties:
             cleanup_finished:
               default: false
@@ -799,7 +797,6 @@ components:
                   order: 3
             required:
             - image
-            - profile
             type: object
             x-walrus-ui:
               colSpan: 12
