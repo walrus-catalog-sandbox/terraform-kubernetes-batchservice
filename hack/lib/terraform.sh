@@ -85,7 +85,7 @@ function seal::terraform::validate() {
   fi
 
   seal::log::info "validating ${target} ..."
-  $(seal::terraform::terraform::bin) -chdir="${target}" init "${extra_args[@]}" 1>/dev/null
+  $(seal::terraform::terraform::bin) -chdir="${target}" init "${extra_args[@]}" -upgrade 1>/dev/null
   $(seal::terraform::terraform::bin) -chdir="${target}" validate "${extra_args[@]}" "$@"
 }
 
@@ -104,7 +104,7 @@ function seal::terraform::test() {
   fi
 
   seal::log::info "testing ${target} ..."
-  $(seal::terraform::terraform::bin) -chdir="${target}" init "${extra_args[@]}" 1>/dev/null
+  $(seal::terraform::terraform::bin) -chdir="${target}" init "${extra_args[@]}" -upgrade 1>/dev/null
   $(seal::terraform::terraform::bin) -chdir="${target}" test "${extra_args[@]}" "$@"
 }
 
