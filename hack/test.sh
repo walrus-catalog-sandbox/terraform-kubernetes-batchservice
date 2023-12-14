@@ -31,12 +31,33 @@ function test() {
   fi
 
   seal::terraform::test "${target}"
-  local examples=()
-  # shellcheck disable=SC2086
-  IFS=" " read -r -a examples <<<"$(seal::util::find_subdirs ${target}/examples)"
-  for example in "${examples[@]}"; do
-    seal::terraform::test "${target}/examples/${example}"
-  done
+
+  if [[ -d "${target}/examples" ]]; then
+    local examples=()
+    # shellcheck disable=SC2086
+    IFS=" " read -r -a examples <<<"$(seal::util::find_subdirs ${target}/examples)"
+    for example in "${examples[@]}"; do
+      seal::terraform::test "${target}/examples/${example}"
+    done
+  fi
+  
+  if [[ -d "${target}/modules" ]]; then
+    local modules=()
+    # shellcheck disable=SC2086
+    IFS=" " read -r -a examples <<<"$(seal::util::find_subdirs ${target}/modules)"
+    for module in "${modules[@]}"; do
+      seal::terraform::test "${target}/modules/${module}"
+    done
+  fi
+
+  if [[ -d "${target}/tests" ]]; then
+    local tests=()
+    # shellcheck disable=SC2086
+    IFS=" " read -r -a tests <<<"$(seal::util::find_subdirs ${target}/tests)"
+    for test in "${tests[@]}"; do
+      seal::terraform::test "${target}/tests/${test}"
+    done
+  fi
 }
 
 #
