@@ -27,7 +27,7 @@ help:
 	#           - `make lint examples/hello-world` only verify the code under examples/hello-world directory.
 	#
 	#   * [dev] `make test`, execute unit testing.
-	#           - `make test example/hello-world` only test the code under examples/hello-world directory.
+	#           - `make test examples/hello-world` only test the code under examples/hello-world directory.
 	#
 	#   * [ci]  `make ci`, execute `make generate`, `make lint` and `make test`.
 	#
