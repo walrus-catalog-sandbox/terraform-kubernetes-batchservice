@@ -106,7 +106,7 @@ locals {
   container_ephemeral_mounts_map = {
     for c in local.containers : c.name => [
       for m in c.mounts : merge(m, {
-        name = format("eph-m-%s", try(m.volume == null || m.volume == "", true) ? replace(uuid(), "-", "") : md5(m.volume))
+        name = format("eph-m-%s", try(m.volume == null || m.volume == "", true) ? md5(join("/", [c.name, m.path])) : md5(m.volume))
       })
       if try(m.volume_refer == null, false)
     ]
@@ -136,7 +136,7 @@ locals {
 # Deployment
 #
 
-## create kubernetes configmap.
+## create ephemeral files.
 
 locals {
   ephemeral_files = flatten([
@@ -162,10 +162,14 @@ locals {
   ]
 }
 
-resource "kubernetes_config_map_v1" "ephemeral_files" {
-  for_each = {
-    for f in try(nonsensitive(local.ephemeral_files), local.ephemeral_files) : f.name => f
+locals {
+  ephemeral_files_map = {
+    for f in local.ephemeral_files : f.name => f
   }
+}
+
+resource "kubernetes_config_map_v1" "ephemeral_files" {
+  for_each = toset(keys(try(nonsensitive(local.ephemeral_files_map), local.ephemeral_files_map)))
 
   metadata {
     namespace   = local.namespace
@@ -175,7 +179,7 @@ resource "kubernetes_config_map_v1" "ephemeral_files" {
   }
 
   data = {
-    content = each.value.content
+    content = local.ephemeral_files_map[each.key].content
   }
 }
 
@@ -277,7 +281,7 @@ resource "kubernetes_job_v1" "task" {
           content {
             name = volume.value.name
             dynamic "config_map" {
-              for_each = volume.value.content_refer.schema == "k8s:configmap" ? [volume.value] : []
+              for_each = volume.value.content_refer.schema == "k8s:configmap" ? [try(nonsensitive(volume.value), volume.value)] : []
               content {
                 default_mode = config_map.value.mode
                 name         = config_map.value.content_refer.params.name
@@ -285,10 +289,11 @@ resource "kubernetes_job_v1" "task" {
                   key  = config_map.value.content_refer.params.key
                   path = basename(config_map.value.path)
                 }
+                optional = try(lookup(config_map.value.volume_refer.params, "optional", null), null)
               }
             }
             dynamic "secret" {
-              for_each = volume.value.content_refer.schema == "k8s:secret" ? [volume.value] : []
+              for_each = volume.value.content_refer.schema == "k8s:secret" ? [try(nonsensitive(volume.value), volume.value)] : []
               content {
                 default_mode = secret.value.mode
                 secret_name  = secret.value.content_refer.params.name
@@ -296,6 +301,7 @@ resource "kubernetes_job_v1" "task" {
                   key  = secret.value.content_refer.params.key
                   path = basename(secret.value.path)
                 }
+                optional = try(lookup(secret.value.volume_refer.params, "optional", null), null)
               }
             }
           }
@@ -316,21 +322,23 @@ resource "kubernetes_job_v1" "task" {
           content {
             name = volume.value.name
             dynamic "config_map" {
-              for_each = volume.value.volume_refer.schema == "k8s:configmap" ? [volume.value] : []
+              for_each = volume.value.volume_refer.schema == "k8s:configmap" ? [try(nonsensitive(volume.value), volume.value)] : []
               content {
                 default_mode = try(lookup(config_map.value.volume_refer.params, "mode", null), null)
                 name         = config_map.value.volume_refer.params.name
+                optional     = try(lookup(config_map.value.volume_refer.params, "optional", null), null)
               }
             }
             dynamic "secret" {
-              for_each = volume.value.volume_refer.schema == "k8s:secret" ? [volume.value] : []
+              for_each = volume.value.volume_refer.schema == "k8s:secret" ? [try(nonsensitive(volume.value), volume.value)] : []
               content {
                 default_mode = try(lookup(secret.value.volume_refer.params, "mode", null), null)
                 secret_name  = secret.value.volume_refer.params.name
+                optional     = try(lookup(secret.value.volume_refer.params, "optional", null), null)
               }
             }
             dynamic "persistent_volume_claim" {
-              for_each = volume.value.volume_refer.schema == "k8s:persistentvolumeclaim" ? [volume.value] : []
+              for_each = volume.value.volume_refer.schema == "k8s:persistentvolumeclaim" ? [try(nonsensitive(volume.value), volume.value)] : []
               content {
                 read_only  = try(lookup(persistent_volume_claim.value.volume_refer.params, "readonly", null), false)
                 claim_name = persistent_volume_claim.value.volume_refer.params.name
@@ -374,30 +382,6 @@ resource "kubernetes_job_v1" "task" {
               }
             }
 
-            #### configure downward-api envs.
-            dynamic "env" {
-              for_each = local.downward_annotations
-              content {
-                name = env.key
-                value_from {
-                  field_ref {
-                    field_path = format("metadata.annotations['%s']", env.value)
-                  }
-                }
-              }
-            }
-            dynamic "env" {
-              for_each = local.downward_labels
-              content {
-                name = env.key
-                value_from {
-                  field_ref {
-                    field_path = format("metadata.labels['%s']", env.value)
-                  }
-                }
-              }
-            }
-
             #### configure ephemeral envs.
             dynamic "env" {
               for_each = local.container_ephemeral_envs_map[init_container.value.name] != null ? try(
@@ -422,6 +406,30 @@ resource "kubernetes_job_v1" "task" {
                   secret_key_ref {
                     name = env.value.value_refer.params.name
                     key  = env.value.value_refer.params.key
+                  }
+                }
+              }
+            }
+
+            #### configure downward-api envs.
+            dynamic "env" {
+              for_each = local.downward_annotations
+              content {
+                name = env.key
+                value_from {
+                  field_ref {
+                    field_path = format("metadata.annotations['%s']", env.value)
+                  }
+                }
+              }
+            }
+            dynamic "env" {
+              for_each = local.downward_labels
+              content {
+                name = env.key
+                value_from {
+                  field_ref {
+                    field_path = format("metadata.labels['%s']", env.value)
                   }
                 }
               }
@@ -517,30 +525,6 @@ resource "kubernetes_job_v1" "task" {
               }
             }
 
-            #### configure downward-api envs.
-            dynamic "env" {
-              for_each = local.downward_annotations
-              content {
-                name = env.key
-                value_from {
-                  field_ref {
-                    field_path = format("metadata.annotations['%s']", env.value)
-                  }
-                }
-              }
-            }
-            dynamic "env" {
-              for_each = local.downward_labels
-              content {
-                name = env.key
-                value_from {
-                  field_ref {
-                    field_path = format("metadata.labels['%s']", env.value)
-                  }
-                }
-              }
-            }
-
             #### configure ephemeral envs.
             dynamic "env" {
               for_each = local.container_ephemeral_envs_map[container.value.name] != null ? try(
@@ -565,6 +549,30 @@ resource "kubernetes_job_v1" "task" {
                   secret_key_ref {
                     name = env.value.value_refer.params.name
                     key  = env.value.value_refer.params.key
+                  }
+                }
+              }
+            }
+
+            #### configure downward-api envs.
+            dynamic "env" {
+              for_each = local.downward_annotations
+              content {
+                name = env.key
+                value_from {
+                  field_ref {
+                    field_path = format("metadata.annotations['%s']", env.value)
+                  }
+                }
+              }
+            }
+            dynamic "env" {
+              for_each = local.downward_labels
+              content {
+                name = env.key
+                value_from {
+                  field_ref {
+                    field_path = format("metadata.labels['%s']", env.value)
                   }
                 }
               }
@@ -625,35 +633,47 @@ resource "kubernetes_job_v1" "task" {
 
             #### configure checks.
             dynamic "startup_probe" {
-              for_each = [
-                for ck in container.value.checks : ck
-                if try(ck.delay > 0 && ck.teardown, false)
-              ]
+              for_each = try(
+                nonsensitive([
+                  for ck in container.value.checks : ck
+                  if try(ck.delay > 0 && ck.teardown, false)
+                ]),
+                [
+                  for ck in container.value.checks : ck
+                  if try(ck.delay > 0 && ck.teardown, false)
+                ]
+              )
               content {
                 initial_delay_seconds = startup_probe.value.delay
                 period_seconds        = startup_probe.value.interval
                 timeout_seconds       = startup_probe.value.timeout
                 failure_threshold     = startup_probe.value.retries
                 dynamic "exec" {
-                  for_each = startup_probe.value.type == "execute" ? [startup_probe.value.execute] : []
+                  for_each = startup_probe.value.type == "execute" ? [
+                    try(nonsensitive(startup_probe.value.execute), startup_probe.value.execute)
+                  ] : []
                   content {
                     command = exec.value.command
                   }
                 }
                 dynamic "tcp_socket" {
-                  for_each = startup_probe.value.type == "tcp" ? [startup_probe.value.tcp] : []
+                  for_each = startup_probe.value.type == "tcp" ? [
+                    try(nonsensitive(startup_probe.value.tcp), startup_probe.value.tcp)
+                  ] : []
                   content {
                     port = tcp_socket.value.port
                   }
                 }
                 dynamic "http_get" {
-                  for_each = startup_probe.value.type == "http" ? [startup_probe.value.http] : []
+                  for_each = startup_probe.value.type == "http" ? [
+                    try(nonsensitive(startup_probe.value.http), startup_probe.value.http)
+                  ] : []
                   content {
                     port   = http_get.value.port
                     path   = http_get.value.path
                     scheme = "HTTP"
                     dynamic "http_header" {
-                      for_each = try(http_get.value.headers != null, false) ? http_get.value.headers : {}
+                      for_each = try(http_get.value.headers != null, false) ? try(nonsensitive(http_get.value.headers), http_get.value.headers) : {}
                       content {
                         name  = http_header.key
                         value = http_header.value
@@ -662,13 +682,15 @@ resource "kubernetes_job_v1" "task" {
                   }
                 }
                 dynamic "http_get" {
-                  for_each = startup_probe.value.type == "https" ? [startup_probe.value.https] : []
+                  for_each = startup_probe.value.type == "https" ? [
+                    try(nonsensitive(startup_probe.value.https), startup_probe.value.https)
+                  ] : []
                   content {
                     port   = http_get.value.port
                     path   = http_get.value.path
                     scheme = "HTTPS"
                     dynamic "http_header" {
-                      for_each = try(http_get.value.headers != null, false) ? http_get.value.headers : {}
+                      for_each = try(http_get.value.headers != null, false) ? try(nonsensitive(http_get.value.headers), http_get.value.headers) : {}
                       content {
                         name  = http_header.key
                         value = http_header.value
@@ -680,35 +702,47 @@ resource "kubernetes_job_v1" "task" {
             }
 
             dynamic "readiness_probe" {
-              for_each = [
-                for ck in container.value.checks : ck
-                if try(!ck.teardown, false)
-              ]
+              for_each = try(
+                nonsensitive([
+                  for ck in container.value.checks : ck
+                  if try(!ck.teardown, false)
+                ]),
+                [
+                  for ck in container.value.checks : ck
+                  if try(!ck.teardown, false)
+                ]
+              )
               content {
                 initial_delay_seconds = readiness_probe.value.delay
                 period_seconds        = readiness_probe.value.interval
                 timeout_seconds       = readiness_probe.value.timeout
                 failure_threshold     = readiness_probe.value.retries
                 dynamic "exec" {
-                  for_each = readiness_probe.value.type == "execute" ? [readiness_probe.value.execute] : []
+                  for_each = readiness_probe.value.type == "execute" ? [
+                    try(nonsensitive(readiness_probe.value.execute), readiness_probe.value.execute)
+                  ] : []
                   content {
                     command = exec.value.command
                   }
                 }
                 dynamic "tcp_socket" {
-                  for_each = readiness_probe.value.type == "tcp" ? [readiness_probe.value.tcp] : []
+                  for_each = readiness_probe.value.type == "tcp" ? [
+                    try(nonsensitive(readiness_probe.value.tcp), readiness_probe.value.tcp)
+                  ] : []
                   content {
                     port = tcp_socket.value.port
                   }
                 }
                 dynamic "http_get" {
-                  for_each = readiness_probe.value.type == "http" ? [readiness_probe.value.http] : []
+                  for_each = readiness_probe.value.type == "http" ? [
+                    try(nonsensitive(readiness_probe.value.http), readiness_probe.value.http)
+                  ] : []
                   content {
                     port   = http_get.value.port
                     path   = http_get.value.path
                     scheme = "HTTP"
                     dynamic "http_header" {
-                      for_each = try(http_get.value.headers != null, false) ? http_get.value.headers : {}
+                      for_each = try(http_get.value.headers != null, false) ? try(nonsensitive(http_get.value.headers), http_get.value.headers) : {}
                       content {
                         name  = http_header.key
                         value = http_header.value
@@ -717,13 +751,15 @@ resource "kubernetes_job_v1" "task" {
                   }
                 }
                 dynamic "http_get" {
-                  for_each = readiness_probe.value.type == "https" ? [readiness_probe.value.https] : []
+                  for_each = readiness_probe.value.type == "https" ? [
+                    try(nonsensitive(readiness_probe.value.https), readiness_probe.value.https)
+                  ] : []
                   content {
                     port   = http_get.value.port
                     path   = http_get.value.path
                     scheme = "HTTPS"
                     dynamic "http_header" {
-                      for_each = try(http_get.value.headers != null, false) ? http_get.value.headers : {}
+                      for_each = try(http_get.value.headers != null, false) ? try(nonsensitive(http_get.value.headers), http_get.value.headers) : {}
                       content {
                         name  = http_header.key
                         value = http_header.value
@@ -735,34 +771,46 @@ resource "kubernetes_job_v1" "task" {
             }
 
             dynamic "liveness_probe" {
-              for_each = [
-                for ck in container.value.checks : ck
-                if try(ck.teardown, false)
-              ]
+              for_each = try(
+                nonsensitive([
+                  for ck in container.value.checks : ck
+                  if try(ck.teardown, false)
+                ]),
+                [
+                  for ck in container.value.checks : ck
+                  if try(ck.teardown, false)
+                ]
+              )
               content {
                 period_seconds    = liveness_probe.value.interval
                 timeout_seconds   = liveness_probe.value.timeout
                 failure_threshold = liveness_probe.value.retries
                 dynamic "exec" {
-                  for_each = liveness_probe.value.type == "execute" ? [liveness_probe.value.execute] : []
+                  for_each = liveness_probe.value.type == "execute" ? [
+                    try(nonsensitive(liveness_probe.value.execute), liveness_probe.value.execute)
+                  ] : []
                   content {
                     command = exec.value.command
                   }
                 }
                 dynamic "tcp_socket" {
-                  for_each = liveness_probe.value.type == "tcp" ? [liveness_probe.value.tcp] : []
+                  for_each = liveness_probe.value.type == "tcp" ? [
+                    try(nonsensitive(liveness_probe.value.tcp), liveness_probe.value.tcp)
+                  ] : []
                   content {
                     port = tcp_socket.value.port
                   }
                 }
                 dynamic "http_get" {
-                  for_each = liveness_probe.value.type == "http" ? [liveness_probe.value.http] : []
+                  for_each = liveness_probe.value.type == "http" ? [
+                    try(nonsensitive(liveness_probe.value.http), liveness_probe.value.http)
+                  ] : []
                   content {
                     port   = http_get.value.port
                     path   = http_get.value.path
                     scheme = "HTTP"
                     dynamic "http_header" {
-                      for_each = try(http_get.value.headers != null, false) ? http_get.value.headers : {}
+                      for_each = try(http_get.value.headers != null, false) ? try(nonsensitive(http_get.value.headers), http_get.value.headers) : {}
                       content {
                         name  = http_header.key
                         value = http_header.value
@@ -771,13 +819,15 @@ resource "kubernetes_job_v1" "task" {
                   }
                 }
                 dynamic "http_get" {
-                  for_each = liveness_probe.value.type == "https" ? [liveness_probe.value.https] : []
+                  for_each = liveness_probe.value.type == "https" ? [
+                    try(nonsensitive(liveness_probe.value.https), liveness_probe.value.https)
+                  ] : []
                   content {
                     port   = http_get.value.port
                     path   = http_get.value.path
                     scheme = "HTTPS"
                     dynamic "http_header" {
-                      for_each = try(http_get.value.headers != null, false) ? http_get.value.headers : {}
+                      for_each = try(http_get.value.headers != null, false) ? try(nonsensitive(http_get.value.headers), http_get.value.headers) : {}
                       content {
                         name  = http_header.key
                         value = http_header.value
@@ -884,7 +934,7 @@ resource "kubernetes_cron_job_v1" "task" {
               content {
                 name = volume.value.name
                 dynamic "config_map" {
-                  for_each = volume.value.content_refer.schema == "k8s:configmap" ? [volume.value] : []
+                  for_each = volume.value.content_refer.schema == "k8s:configmap" ? [try(nonsensitive(volume.value), volume.value)] : []
                   content {
                     default_mode = config_map.value.mode
                     name         = config_map.value.content_refer.params.name
@@ -892,10 +942,11 @@ resource "kubernetes_cron_job_v1" "task" {
                       key  = config_map.value.content_refer.params.key
                       path = basename(config_map.value.path)
                     }
+                    optional = try(lookup(config_map.value.volume_refer.params, "optional", null), null)
                   }
                 }
                 dynamic "secret" {
-                  for_each = volume.value.content_refer.schema == "k8s:secret" ? [volume.value] : []
+                  for_each = volume.value.content_refer.schema == "k8s:secret" ? [try(nonsensitive(volume.value), volume.value)] : []
                   content {
                     default_mode = secret.value.mode
                     secret_name  = secret.value.content_refer.params.name
@@ -903,6 +954,7 @@ resource "kubernetes_cron_job_v1" "task" {
                       key  = secret.value.content_refer.params.key
                       path = basename(secret.value.path)
                     }
+                    optional = try(lookup(secret.value.volume_refer.params, "optional", null), null)
                   }
                 }
               }
@@ -923,21 +975,23 @@ resource "kubernetes_cron_job_v1" "task" {
               content {
                 name = volume.value.name
                 dynamic "config_map" {
-                  for_each = volume.value.volume_refer.schema == "k8s:configmap" ? [volume.value] : []
+                  for_each = volume.value.volume_refer.schema == "k8s:configmap" ? [try(nonsensitive(volume.value), volume.value)] : []
                   content {
                     default_mode = try(lookup(config_map.value.volume_refer.params, "mode", null), null)
                     name         = config_map.value.volume_refer.params.name
+                    optional     = try(lookup(config_map.value.volume_refer.params, "optional", null), null)
                   }
                 }
                 dynamic "secret" {
-                  for_each = volume.value.volume_refer.schema == "k8s:secret" ? [volume.value] : []
+                  for_each = volume.value.volume_refer.schema == "k8s:secret" ? [try(nonsensitive(volume.value), volume.value)] : []
                   content {
                     default_mode = try(lookup(secret.value.volume_refer.params, "mode", null), null)
                     secret_name  = secret.value.volume_refer.params.name
+                    optional     = try(lookup(secret.value.volume_refer.params, "optional", null), null)
                   }
                 }
                 dynamic "persistent_volume_claim" {
-                  for_each = volume.value.volume_refer.schema == "k8s:persistentvolumeclaim" ? [volume.value] : []
+                  for_each = volume.value.volume_refer.schema == "k8s:persistentvolumeclaim" ? [try(nonsensitive(volume.value), volume.value)] : []
                   content {
                     read_only  = try(lookup(persistent_volume_claim.value.volume_refer.params, "readonly", null), false)
                     claim_name = persistent_volume_claim.value.volume_refer.params.name
@@ -981,30 +1035,6 @@ resource "kubernetes_cron_job_v1" "task" {
                   }
                 }
 
-                #### configure downward-api envs.
-                dynamic "env" {
-                  for_each = local.downward_annotations
-                  content {
-                    name = env.key
-                    value_from {
-                      field_ref {
-                        field_path = format("metadata.annotations['%s']", env.value)
-                      }
-                    }
-                  }
-                }
-                dynamic "env" {
-                  for_each = local.downward_labels
-                  content {
-                    name = env.key
-                    value_from {
-                      field_ref {
-                        field_path = format("metadata.labels['%s']", env.value)
-                      }
-                    }
-                  }
-                }
-
                 #### configure ephemeral envs.
                 dynamic "env" {
                   for_each = local.container_ephemeral_envs_map[init_container.value.name] != null ? try(
@@ -1029,6 +1059,30 @@ resource "kubernetes_cron_job_v1" "task" {
                       secret_key_ref {
                         name = env.value.value_refer.params.name
                         key  = env.value.value_refer.params.key
+                      }
+                    }
+                  }
+                }
+
+                #### configure downward-api envs.
+                dynamic "env" {
+                  for_each = local.downward_annotations
+                  content {
+                    name = env.key
+                    value_from {
+                      field_ref {
+                        field_path = format("metadata.annotations['%s']", env.value)
+                      }
+                    }
+                  }
+                }
+                dynamic "env" {
+                  for_each = local.downward_labels
+                  content {
+                    name = env.key
+                    value_from {
+                      field_ref {
+                        field_path = format("metadata.labels['%s']", env.value)
                       }
                     }
                   }
@@ -1124,30 +1178,6 @@ resource "kubernetes_cron_job_v1" "task" {
                   }
                 }
 
-                #### configure downward-api envs.
-                dynamic "env" {
-                  for_each = local.downward_annotations
-                  content {
-                    name = env.key
-                    value_from {
-                      field_ref {
-                        field_path = format("metadata.annotations['%s']", env.value)
-                      }
-                    }
-                  }
-                }
-                dynamic "env" {
-                  for_each = local.downward_labels
-                  content {
-                    name = env.key
-                    value_from {
-                      field_ref {
-                        field_path = format("metadata.labels['%s']", env.value)
-                      }
-                    }
-                  }
-                }
-
                 #### configure ephemeral envs.
                 dynamic "env" {
                   for_each = local.container_ephemeral_envs_map[container.value.name] != null ? try(
@@ -1172,6 +1202,30 @@ resource "kubernetes_cron_job_v1" "task" {
                       secret_key_ref {
                         name = env.value.value_refer.params.name
                         key  = env.value.value_refer.params.key
+                      }
+                    }
+                  }
+                }
+
+                #### configure downward-api envs.
+                dynamic "env" {
+                  for_each = local.downward_annotations
+                  content {
+                    name = env.key
+                    value_from {
+                      field_ref {
+                        field_path = format("metadata.annotations['%s']", env.value)
+                      }
+                    }
+                  }
+                }
+                dynamic "env" {
+                  for_each = local.downward_labels
+                  content {
+                    name = env.key
+                    value_from {
+                      field_ref {
+                        field_path = format("metadata.labels['%s']", env.value)
                       }
                     }
                   }
@@ -1232,35 +1286,47 @@ resource "kubernetes_cron_job_v1" "task" {
 
                 #### configure checks.
                 dynamic "startup_probe" {
-                  for_each = [
-                    for ck in container.value.checks : ck
-                    if try(ck.delay > 0 && ck.teardown, false)
-                  ]
+                  for_each = try(
+                    nonsensitive([
+                      for ck in container.value.checks : ck
+                      if try(ck.delay > 0 && ck.teardown, false)
+                    ]),
+                    [
+                      for ck in container.value.checks : ck
+                      if try(ck.delay > 0 && ck.teardown, false)
+                    ]
+                  )
                   content {
                     initial_delay_seconds = startup_probe.value.delay
                     period_seconds        = startup_probe.value.interval
                     timeout_seconds       = startup_probe.value.timeout
                     failure_threshold     = startup_probe.value.retries
                     dynamic "exec" {
-                      for_each = startup_probe.value.type == "execute" ? [startup_probe.value.execute] : []
+                      for_each = startup_probe.value.type == "execute" ? [
+                        try(nonsensitive(startup_probe.value.execute), startup_probe.value.execute)
+                      ] : []
                       content {
                         command = exec.value.command
                       }
                     }
                     dynamic "tcp_socket" {
-                      for_each = startup_probe.value.type == "tcp" ? [startup_probe.value.tcp] : []
+                      for_each = startup_probe.value.type == "tcp" ? [
+                        try(nonsensitive(startup_probe.value.tcp), startup_probe.value.tcp)
+                      ] : []
                       content {
                         port = tcp_socket.value.port
                       }
                     }
                     dynamic "http_get" {
-                      for_each = startup_probe.value.type == "http" ? [startup_probe.value.http] : []
+                      for_each = startup_probe.value.type == "http" ? [
+                        try(nonsensitive(startup_probe.value.http), startup_probe.value.http)
+                      ] : []
                       content {
                         port   = http_get.value.port
                         path   = http_get.value.path
                         scheme = "HTTP"
                         dynamic "http_header" {
-                          for_each = try(http_get.value.headers != null, false) ? http_get.value.headers : {}
+                          for_each = try(http_get.value.headers != null, false) ? try(nonsensitive(http_get.value.headers), http_get.value.headers) : {}
                           content {
                             name  = http_header.key
                             value = http_header.value
@@ -1269,13 +1335,15 @@ resource "kubernetes_cron_job_v1" "task" {
                       }
                     }
                     dynamic "http_get" {
-                      for_each = startup_probe.value.type == "https" ? [startup_probe.value.https] : []
+                      for_each = startup_probe.value.type == "https" ? [
+                        try(nonsensitive(startup_probe.value.https), startup_probe.value.https)
+                      ] : []
                       content {
                         port   = http_get.value.port
                         path   = http_get.value.path
                         scheme = "HTTPS"
                         dynamic "http_header" {
-                          for_each = try(http_get.value.headers != null, false) ? http_get.value.headers : {}
+                          for_each = try(http_get.value.headers != null, false) ? try(nonsensitive(http_get.value.headers), http_get.value.headers) : {}
                           content {
                             name  = http_header.key
                             value = http_header.value
@@ -1287,35 +1355,47 @@ resource "kubernetes_cron_job_v1" "task" {
                 }
 
                 dynamic "readiness_probe" {
-                  for_each = [
-                    for ck in container.value.checks : ck
-                    if try(!ck.teardown, false)
-                  ]
+                  for_each = try(
+                    nonsensitive([
+                      for ck in container.value.checks : ck
+                      if try(!ck.teardown, false)
+                    ]),
+                    [
+                      for ck in container.value.checks : ck
+                      if try(!ck.teardown, false)
+                    ]
+                  )
                   content {
                     initial_delay_seconds = readiness_probe.value.delay
                     period_seconds        = readiness_probe.value.interval
                     timeout_seconds       = readiness_probe.value.timeout
                     failure_threshold     = readiness_probe.value.retries
                     dynamic "exec" {
-                      for_each = readiness_probe.value.type == "execute" ? [readiness_probe.value.execute] : []
+                      for_each = readiness_probe.value.type == "execute" ? [
+                        try(nonsensitive(readiness_probe.value.execute), readiness_probe.value.execute)
+                      ] : []
                       content {
                         command = exec.value.command
                       }
                     }
                     dynamic "tcp_socket" {
-                      for_each = readiness_probe.value.type == "tcp" ? [readiness_probe.value.tcp] : []
+                      for_each = readiness_probe.value.type == "tcp" ? [
+                        try(nonsensitive(readiness_probe.value.tcp), readiness_probe.value.tcp)
+                      ] : []
                       content {
                         port = tcp_socket.value.port
                       }
                     }
                     dynamic "http_get" {
-                      for_each = readiness_probe.value.type == "http" ? [readiness_probe.value.http] : []
+                      for_each = readiness_probe.value.type == "http" ? [
+                        try(nonsensitive(readiness_probe.value.http), readiness_probe.value.http)
+                      ] : []
                       content {
                         port   = http_get.value.port
                         path   = http_get.value.path
                         scheme = "HTTP"
                         dynamic "http_header" {
-                          for_each = try(http_get.value.headers != null, false) ? http_get.value.headers : {}
+                          for_each = try(http_get.value.headers != null, false) ? try(nonsensitive(http_get.value.headers), http_get.value.headers) : {}
                           content {
                             name  = http_header.key
                             value = http_header.value
@@ -1324,13 +1404,15 @@ resource "kubernetes_cron_job_v1" "task" {
                       }
                     }
                     dynamic "http_get" {
-                      for_each = readiness_probe.value.type == "https" ? [readiness_probe.value.https] : []
+                      for_each = readiness_probe.value.type == "https" ? [
+                        try(nonsensitive(readiness_probe.value.https), readiness_probe.value.https)
+                      ] : []
                       content {
                         port   = http_get.value.port
                         path   = http_get.value.path
                         scheme = "HTTPS"
                         dynamic "http_header" {
-                          for_each = try(http_get.value.headers != null, false) ? http_get.value.headers : {}
+                          for_each = try(http_get.value.headers != null, false) ? try(nonsensitive(http_get.value.headers), http_get.value.headers) : {}
                           content {
                             name  = http_header.key
                             value = http_header.value
@@ -1342,34 +1424,46 @@ resource "kubernetes_cron_job_v1" "task" {
                 }
 
                 dynamic "liveness_probe" {
-                  for_each = [
-                    for ck in container.value.checks : ck
-                    if try(ck.teardown, false)
-                  ]
+                  for_each = try(
+                    nonsensitive([
+                      for ck in container.value.checks : ck
+                      if try(ck.teardown, false)
+                    ]),
+                    [
+                      for ck in container.value.checks : ck
+                      if try(ck.teardown, false)
+                    ]
+                  )
                   content {
                     period_seconds    = liveness_probe.value.interval
                     timeout_seconds   = liveness_probe.value.timeout
                     failure_threshold = liveness_probe.value.retries
                     dynamic "exec" {
-                      for_each = liveness_probe.value.type == "execute" ? [liveness_probe.value.execute] : []
+                      for_each = liveness_probe.value.type == "execute" ? [
+                        try(nonsensitive(liveness_probe.value.execute), liveness_probe.value.execute)
+                      ] : []
                       content {
                         command = exec.value.command
                       }
                     }
                     dynamic "tcp_socket" {
-                      for_each = liveness_probe.value.type == "tcp" ? [liveness_probe.value.tcp] : []
+                      for_each = liveness_probe.value.type == "tcp" ? [
+                        try(nonsensitive(liveness_probe.value.tcp), liveness_probe.value.tcp)
+                      ] : []
                       content {
                         port = tcp_socket.value.port
                       }
                     }
                     dynamic "http_get" {
-                      for_each = liveness_probe.value.type == "http" ? [liveness_probe.value.http] : []
+                      for_each = liveness_probe.value.type == "http" ? [
+                        try(nonsensitive(liveness_probe.value.http), liveness_probe.value.http)
+                      ] : []
                       content {
                         port   = http_get.value.port
                         path   = http_get.value.path
                         scheme = "HTTP"
                         dynamic "http_header" {
-                          for_each = try(http_get.value.headers != null, false) ? http_get.value.headers : {}
+                          for_each = try(http_get.value.headers != null, false) ? try(nonsensitive(http_get.value.headers), http_get.value.headers) : {}
                           content {
                             name  = http_header.key
                             value = http_header.value
@@ -1378,13 +1472,15 @@ resource "kubernetes_cron_job_v1" "task" {
                       }
                     }
                     dynamic "http_get" {
-                      for_each = liveness_probe.value.type == "https" ? [liveness_probe.value.https] : []
+                      for_each = liveness_probe.value.type == "https" ? [
+                        try(nonsensitive(liveness_probe.value.https), liveness_probe.value.https)
+                      ] : []
                       content {
                         port   = http_get.value.port
                         path   = http_get.value.path
                         scheme = "HTTPS"
                         dynamic "http_header" {
-                          for_each = try(http_get.value.headers != null, false) ? http_get.value.headers : {}
+                          for_each = try(http_get.value.headers != null, false) ? try(nonsensitive(http_get.value.headers), http_get.value.headers) : {}
                           content {
                             name  = http_header.key
                             value = http_header.value

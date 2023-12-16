@@ -195,7 +195,7 @@ components:
                 properties:
                   name:
                     description: |
-                      Specify the name of the sysctl, select from https://kubernetes.io/docs/tasks/administer-cluster/sysctl-cluster/#listing-all-sysctl-parameters.
+                      Specify the name of the sysctl. See https://kubernetes.io/docs/tasks/administer-cluster/sysctl-cluster/#listing-all-sysctl-parameters.
                     title: Name
                     type: string
                     x-walrus-ui:
