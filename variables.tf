@@ -126,15 +126,16 @@ containers:
     gpu: number, optional               # in oneGPU, i.e. 1, 2, 4
   envs:
   - name: string
-    value: string, optional             # accpet changed and restart
-    value_refer:                        # donot accpet changed
+    value: string, optional
+    value_refer:
       schema: string
       params: map(any)
   files:
   - path: string
     mode: string, optional
-    content: string, optional           # accpet changed but not restart
-    content_refer:                      # donot accpet changed
+    accept_changed: bool, optional      # accpet changed
+    content: string, optional
+    content_refer:
       schema: string
       params: map(any)
   mounts:
@@ -191,9 +192,10 @@ EOF
       }))
     })))
     files = optional(list(object({
-      path    = string
-      mode    = optional(string, "0644")
-      content = optional(string)
+      path           = string
+      mode           = optional(string, "0644")
+      accept_changed = optional(bool, false)
+      content        = optional(string)
       content_refer = optional(object({
         schema = string
         params = map(any)
