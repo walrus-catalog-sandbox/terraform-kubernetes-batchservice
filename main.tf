@@ -199,6 +199,29 @@ locals {
   }
 
   completions = try(var.task.completions > 0, false) ? var.task.completions : null
+
+  run_containers_mapping_checks_map = {
+    for n, cks in {
+      for c in local.run_containers : c.name => {
+        startup = [
+          for ck in c.checks : ck
+          if try(ck.delay > 0 && ck.teardown, false)
+        ]
+        readiness = [
+          for ck in c.checks : ck
+          if try(!ck.teardown, false)
+        ]
+        liveness = [
+          for ck in c.checks : ck
+          if try(ck.teardown, false)
+        ]
+      }
+      } : n => merge(cks, {
+        startup   = try(slice(cks.startup, 0, 1), [])
+        readiness = try(slice(cks.readiness, 0, 1), [])
+        liveness  = try(slice(cks.liveness, 0, 1), [])
+    })
+  }
 }
 
 resource "terraform_data" "replacement" {
@@ -636,14 +659,8 @@ resource "kubernetes_job_v1" "task" {
             #### configure checks.
             dynamic "startup_probe" {
               for_each = try(
-                nonsensitive([
-                  for ck in container.value.checks : ck
-                  if try(ck.delay > 0 && ck.teardown, false)
-                ]),
-                [
-                  for ck in container.value.checks : ck
-                  if try(ck.delay > 0 && ck.teardown, false)
-                ]
+                nonsensitive(local.run_containers_mapping_checks_map[container.value.name].startup),
+                local.run_containers_mapping_checks_map[container.value.name].startup
               )
               content {
                 initial_delay_seconds = startup_probe.value.delay
@@ -705,14 +722,8 @@ resource "kubernetes_job_v1" "task" {
 
             dynamic "readiness_probe" {
               for_each = try(
-                nonsensitive([
-                  for ck in container.value.checks : ck
-                  if try(!ck.teardown, false)
-                ]),
-                [
-                  for ck in container.value.checks : ck
-                  if try(!ck.teardown, false)
-                ]
+                nonsensitive(local.run_containers_mapping_checks_map[container.value.name].readiness),
+                local.run_containers_mapping_checks_map[container.value.name].readiness
               )
               content {
                 initial_delay_seconds = readiness_probe.value.delay
@@ -774,14 +785,8 @@ resource "kubernetes_job_v1" "task" {
 
             dynamic "liveness_probe" {
               for_each = try(
-                nonsensitive([
-                  for ck in container.value.checks : ck
-                  if try(ck.teardown, false)
-                ]),
-                [
-                  for ck in container.value.checks : ck
-                  if try(ck.teardown, false)
-                ]
+                nonsensitive(local.run_containers_mapping_checks_map[container.value.name].liveness),
+                local.run_containers_mapping_checks_map[container.value.name].liveness
               )
               content {
                 period_seconds    = liveness_probe.value.interval
@@ -1291,14 +1296,8 @@ resource "kubernetes_cron_job_v1" "task" {
                 #### configure checks.
                 dynamic "startup_probe" {
                   for_each = try(
-                    nonsensitive([
-                      for ck in container.value.checks : ck
-                      if try(ck.delay > 0 && ck.teardown, false)
-                    ]),
-                    [
-                      for ck in container.value.checks : ck
-                      if try(ck.delay > 0 && ck.teardown, false)
-                    ]
+                    nonsensitive(local.run_containers_mapping_checks_map[container.value.name].startup),
+                    local.run_containers_mapping_checks_map[container.value.name].startup
                   )
                   content {
                     initial_delay_seconds = startup_probe.value.delay
@@ -1360,14 +1359,8 @@ resource "kubernetes_cron_job_v1" "task" {
 
                 dynamic "readiness_probe" {
                   for_each = try(
-                    nonsensitive([
-                      for ck in container.value.checks : ck
-                      if try(!ck.teardown, false)
-                    ]),
-                    [
-                      for ck in container.value.checks : ck
-                      if try(!ck.teardown, false)
-                    ]
+                    nonsensitive(local.run_containers_mapping_checks_map[container.value.name].readiness),
+                    local.run_containers_mapping_checks_map[container.value.name].readiness
                   )
                   content {
                     initial_delay_seconds = readiness_probe.value.delay
@@ -1429,14 +1422,8 @@ resource "kubernetes_cron_job_v1" "task" {
 
                 dynamic "liveness_probe" {
                   for_each = try(
-                    nonsensitive([
-                      for ck in container.value.checks : ck
-                      if try(ck.teardown, false)
-                    ]),
-                    [
-                      for ck in container.value.checks : ck
-                      if try(ck.teardown, false)
-                    ]
+                    nonsensitive(local.run_containers_mapping_checks_map[container.value.name].liveness),
+                    local.run_containers_mapping_checks_map[container.value.name].liveness
                   )
                   content {
                     period_seconds    = liveness_probe.value.interval

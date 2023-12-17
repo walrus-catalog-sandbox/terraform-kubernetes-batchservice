@@ -245,6 +245,10 @@ components:
               checks:
                 description: |
                   Configure the healthz checks.
+                  Usually, the check will convert to a readiness probe.
+                  When allowing teardown, the check will convert to a liveness probe,
+                  When allowing teardown and a delay larger than 0, the check will convert to a liveness probe and a startup probe.
+                  Each type of prob is only allowed to have one, so only allow configuring at most two checks.
                 items:
                   properties:
                     delay:
@@ -443,6 +447,7 @@ components:
                   type: object
                   x-walrus-ui:
                     colSpan: 12
+                maxItems: 2
                 nullable: true
                 title: Checks
                 type: array
