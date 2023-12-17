@@ -588,10 +588,24 @@ components:
                   Configure the files.
                 items:
                   properties:
+                    accept_changed:
+                      default: false
+                      description: "Specify whether to accept the changed of the (configuration)
+                        file.\nValue changes will be propagated but will not restart
+                        the container.\nIt should be noted that the change awareness
+                        of the file is based on mounting the directory of the file.\nSo
+                        if there are multiple files in the same directory, like `/path/to/dir/file1.txt`
+                        and `/path/to/dir/file2.txt` \nor have the similar directory
+                        path, like `/path/to/dir/file1.txt` and `/path/to/file2.txt`,
+                        \nthis may cause the startup to fail.\n"
+                      nullable: true
+                      title: Accept Changed
+                      type: boolean
+                      x-walrus-ui:
+                        order: 3
                     content:
                       description: |
                         Specify the content of the (configuration) file.
-                        Value source changes will be propagated and will affect tasks that are running or will be run.
                       nullable: true
                       title: Content
                       type: string
