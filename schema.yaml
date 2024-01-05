@@ -548,6 +548,15 @@ components:
                     x-walrus-ui:
                       colSpan: 12
                       order: 1
+                  privileged:
+                    default: false
+                    description: |
+                      Specify whether to run the container as privileged.
+                    nullable: true
+                    title: Privileged
+                    type: boolean
+                    x-walrus-ui:
+                      order: 7
                   readonly_rootfs:
                     default: false
                     description: |
