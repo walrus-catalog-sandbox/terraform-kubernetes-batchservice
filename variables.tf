@@ -120,6 +120,7 @@ containers:
     readonly_rootfs: bool, optional
     as_user: number, optional
     as_group: number, optional
+    privileged: bool, optional
   resources:
     cpu: number, optional               # in oneCPU, i.e. 0.25, 0.5, 1, 2, 4
     memory: number, optional            # in megabyte
@@ -177,6 +178,7 @@ EOF
       readonly_rootfs = optional(bool, false)
       as_user         = optional(number)
       as_group        = optional(number)
+      privileged      = optional(bool, false)
     }))
     resources = optional(object({
       cpu    = optional(number, 0.25)
