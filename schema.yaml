@@ -816,6 +816,7 @@ components:
             colSpan: 12
             group: Basic
             order: 4
+            widget: ""
       x-walrus-ui:
         groupOrder:
         - Basic
