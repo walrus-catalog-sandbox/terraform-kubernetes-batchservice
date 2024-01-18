@@ -87,7 +87,7 @@ locals {
   container_ephemeral_files_map = {
     for c in local.containers : c.name => [
       for f in c.files : merge(f, {
-        name = format("eph-f-%s-%s", c.name, md5(join("-", [local.namespace, f.path])))
+        name = format("eph-f-%s-%s", c.name, md5(join("-", [local.project_name, local.environment_name, local.resource_name, f.path])))
       })
       if try(f.content_refer == null, false)
     ]
